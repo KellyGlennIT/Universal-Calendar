@@ -8,9 +8,8 @@ import 'calendar_explainer_page.dart';
 import 'christian_tools_page.dart';
 import 'create_calendar_page.dart';
 import 'equivalents_page.dart';
+import 'pdf_export_page.dart';
 
-/// The navigation drawer — home, calendars, create, equivalents, christian
-/// tools, calendar guide, settings, about.
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
@@ -80,6 +79,14 @@ class AppDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const EquivalentsPage()),
+              );
+            }),
+            _drawerTile(context, Icons.picture_as_pdf,
+                tr(context, 'Export PDF'), -1, nav.currentIndex, () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PdfExportPage()),
               );
             }),
             _drawerTile(context, Icons.auto_awesome,

@@ -11,6 +11,7 @@ import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/language_selection_screen.dart';
+import 'screens/notification_permission_screen.dart';
 import 'screens/main_scaffold.dart';
 import 'screens/create_calendar_page.dart';
 import 'screens/equivalents_page.dart';
@@ -52,8 +53,6 @@ class UniversalCalendarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Watching LocaleProvider rebuilds the entire app on language change —
-    // this is what makes instant English ↔ French switching work everywhere.
     final localeProvider = context.watch<LocaleProvider>();
     Intl.defaultLocale = localeProvider.locale.languageCode;
 
@@ -75,7 +74,9 @@ class UniversalCalendarApp extends StatelessWidget {
           ? const SplashScreen()
           : !localeProvider.hasSelectedLanguage
               ? const LanguageSelectionScreen()
-              : const MainScaffold(),
+              : !localeProvider.hasAskedForNotifications
+                  ? const NotificationPermissionScreen()
+                  : const MainScaffold(),
       routes: {
         '/create_calendar': (context) => const CreateCalendarPage(),
         '/equivalents': (context) => const EquivalentsPage(),

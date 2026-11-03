@@ -89,9 +89,8 @@ class NotificationPermissionScreen extends StatelessWidget {
                           await locale.markNotificationsAsked();
                           if (granted) {
                             messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    tr(context, 'Notifications enabled')),
+                              const SnackBar(
+                                content: Text('Notifications enabled'),
                               ),
                             );
                           }

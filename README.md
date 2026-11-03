@@ -9,6 +9,9 @@ Universal Calendar is a Flutter calendar workspace built around user-defined cal
 - Android notifications: `flutter_local_notifications 19.4.2`
 - Local timezone resolution: `flutter_timezone 4.1.1` + `timezone 0.10.1`
 - Material 3, Provider, SharedPreferences and `intl 0.20.2`
+- PDF generation: `pdf ^3.11.0` + `printing ^5.13.0`
+- File saving for PDF export: `path_provider ^2.1.0`
+- Pinned for compatibility: `image 4.5.4` + `archive 4.0.7` (see *Dependency compatibility fix* below)
 
 ## Work included in this revision
 
@@ -35,6 +38,27 @@ Universal Calendar is a Flutter calendar workspace built around user-defined cal
 - Added Android reboot receivers so scheduled reminders can be restored after restart.
 - Created a new sound-enabled notification channel and a dedicated small notification icon. The Settings test-alert action sends an audible test notification.
 - Existing saved events are rescheduled when the app loads. Removing a calendar or resetting data cancels its reminders.
+
+### PDF export
+- New **Export PDF** entry in the navigation drawer opens a dedicated export page.
+- The export page lets the user pick which calendar to export, set a start/end month and year range, and toggle whether events, special days and a cover page are included.
+- The generated PDF is typeset directly from the selected calendar's own month names, weekday names, week length and month lengths — not from a Gregorian template.
+- Events and special days are drawn on the month grid (bold/special-colored day numbers) and listed below the grid, with a `+ N more events` overflow line.
+- The finished PDF is saved to the app's documents directory as `<CalendarName>_calendar.pdf`, with a confirmation snackbar showing the full path.
+
+### Error fixes in this revision
+- **Missing `pdf_export_page.dart`** — the drawer referenced `PdfExportPage` but the file did not exist, so the project did not compile. The page has been created.
+- **`PdfColor.withOpacity` does not exist** — the `pdf` package's `PdfColor` has no `withOpacity` (that is a Flutter `Color` method). The faded empty-day dot in the month grid now uses a pre-computed fainter hex color instead.
+- **`path_provider` added as a direct dependency** — the export page imports it directly; it was previously only a transitive dependency.
+- **`flutter analyze` is clean** — remaining `use_build_context_synchronously`, `prefer_function_declarations_over_variables`, `unnecessary_this`, deprecated `RadioListTile.groupValue`/`onChanged` (replaced with the modern `RadioGroup` widget) and deprecated `SwitchListTile.activeColor` diagnostics were resolved.
+
+### Dependency compatibility fix
+- `image 4.11.0` called `ZLibDecoder().decodeLazy()`, which does not exist in `archive 4.0.9`. This made the entire test suite fail to compile (the error surfaced through `pdf`/`printing`, which pull in `image` and `archive` transitively).
+- `image` is pinned to **4.5.4** and `archive` to **4.0.7** in `pubspec.yaml` to keep both packages on a mutually compatible version.
+
+### Test layout fix caught by the test suite
+- The first-launch language picker screen used a fixed-height `Column` with `Spacer` widgets, which overflowed by ~23px on small viewports (the "language picker is shown on first launch" test caught a `RenderFlex overflow` assertion).
+- The screen now wraps its content in a `SingleChildScrollView` sized by a `LayoutBuilder` so it scrolls on small screens while remaining vertically centered on larger ones.
 
 ### English and French
 - Language is selected in **Settings → Experience → Language** and is saved across restarts.

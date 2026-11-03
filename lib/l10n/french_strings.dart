@@ -359,4 +359,31 @@ const Map<String, String> frenchStrings = {
   'Enable notifications': 'Activer les notifications',
   'Not now': 'Pas maintenant',
   'Notifications enabled': 'Notifications activées',
+    'Add a calendar': 'Ajouter un calendrier',
+  'Tap a calendar type to add it instantly. You can rename it later.':
+      'Touchez un type de calendrier pour l’ajouter instantanément. Vous pourrez le renommer plus tard.',
+  'Added': 'Ajouté',
+    'Are you sure you want to delete this event?':
+      'Voulez-vous vraiment supprimer cet événement ?',
+        'Export PDF': 'Exporter en PDF',
+  'Which calendar?': 'Quel calendrier ?',
+  'Range': 'Plage',
+  'Full year': 'Année complète',
+  'Custom range': 'Plage personnalisée',
+  'Start': 'Début',
+  'End': 'Fin',
+  'Year': 'Année',
+  'Options': 'Options',
+  'Include cover page': 'Inclure la page de couverture',
+  'Include events': 'Inclure les événements',
+  'Include special days': 'Inclure les jours spéciaux',
+  'Generate PDF': 'Générer le PDF',
+  'Generating…': 'Génération…',
+  'Generated PDF opens the system share sheet — save to Files, email, or print from there.':
+      'Le PDF généré ouvre le menu de partage — enregistrez dans Fichiers, envoyez par e-mail ou imprimez.',
+  'End must be after start': 'La fin doit être après le début',
+  'Export failed': 'Échec de l’export',
+  'No calendars': 'Aucun calendrier',
+  'Calendar': 'Calendrier',
+  
 };

@@ -27,10 +27,15 @@ class LanguageSelectionScreen extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 460),
               child: Padding(
                 padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Spacer(),
+                child: LayoutBuilder(builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                        const SizedBox(height: 40),
                     Container(
                       width: 110,
                       height: 110,
@@ -87,13 +92,16 @@ class LanguageSelectionScreen extends StatelessWidget {
                       onTap: () =>
                           context.read<LocaleProvider>().setLanguage('fr'),
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 40),
                     const Text(
                       'Version 3.0',
                       style: TextStyle(fontSize: 12, color: Color(0xFF4A4A5A)),
                     ),
                   ],
-                ),
+                      ),
+                    ),
+                  );
+                }),
               ),
             ),
           ),

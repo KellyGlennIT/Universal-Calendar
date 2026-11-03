@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/calendar_math.dart';
+import '../utils/dialogs.dart';
 import '../utils/formatters.dart';
 import '../l10n/tr.dart';
 import 'add_event_page.dart';
@@ -76,8 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            if (_viewMode == 'month')
-              const _MonthPickerHeader(),
+            if (_viewMode == 'month') const _MonthPickerHeader(),
             if (_viewMode == 'month') const SizedBox(height: 8),
             Expanded(
               child: AnimatedSwitcher(
@@ -121,8 +121,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-// ======================== BOTTOM BAR ========================
 
 class _BottomBar extends StatelessWidget {
   final CalendarProvider provider;
@@ -210,8 +208,6 @@ class _BottomBar extends StatelessWidget {
     );
   }
 }
-
-// ======================== CALENDAR SELECTOR ========================
 
 class _CalendarSelector extends StatelessWidget {
   const _CalendarSelector();
@@ -369,8 +365,6 @@ class _CalendarSelector extends StatelessWidget {
   }
 }
 
-// ======================== MULTI-CALENDAR STRIP ========================
-
 class _MultiCalendarStrip extends StatelessWidget {
   const _MultiCalendarStrip();
 
@@ -450,8 +444,6 @@ class _MultiCalendarStrip extends StatelessWidget {
     );
   }
 }
-
-// ======================== MONTH PICKER HEADER ========================
 
 class _MonthPickerHeader extends StatelessWidget {
   const _MonthPickerHeader();
@@ -574,8 +566,6 @@ class _MonthPickerHeader extends StatelessWidget {
     );
   }
 }
-
-// ======================== WEEK VIEW (redesigned) ========================
 
 class _WeekCalendarView extends StatelessWidget {
   const _WeekCalendarView({super.key});
@@ -928,8 +918,6 @@ class _WeekCalendarView extends StatelessWidget {
   }
 }
 
-// ======================== AGENDA VIEW ========================
-
 class _AgendaCalendarView extends StatelessWidget {
   const _AgendaCalendarView({super.key});
 
@@ -1016,8 +1004,6 @@ class _AgendaCalendarView extends StatelessWidget {
     );
   }
 }
-
-// ======================== CALENDAR GRID ========================
 
 class _CalendarGrid extends StatelessWidget {
   const _CalendarGrid();
@@ -1413,10 +1399,18 @@ class _CalendarGrid extends StatelessWidget {
                     '${event.time} - ${event.notes.isNotEmpty ? event.notes : 'No notes'}'),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline, size: 20),
-                  onPressed: () {
-                    Provider.of<CalendarProvider>(context, listen: false)
-                        .deleteEvent(event.id);
-                    Navigator.pop(context);
+                  onPressed: () async {
+                    final confirmed = await confirmDelete(
+                      context,
+                      tr(context,
+                          'Are you sure you want to delete this event?'),
+                    );
+                    if (confirmed && context.mounted) {
+                      Provider.of<CalendarProvider>(context,
+                              listen: false)
+                          .deleteEvent(event.id);
+                      Navigator.pop(context);
+                    }
                   },
                 ),
               );

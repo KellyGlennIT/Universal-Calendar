@@ -5,12 +5,11 @@ import 'package:provider/provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/locale_provider.dart';
 import '../services/notification_service.dart';
+import '../utils/calendar_presets.dart';
 import '../l10n/tr.dart';
 import 'calendar_explainer_page.dart';
 import 'main_scaffold.dart';
 
-/// The Settings tab — language, calendar preferences, time format,
-/// notifications, tour replay, and data management.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -89,6 +88,72 @@ class SettingsScreen extends StatelessWidget {
               onChanged: (value) => provider.setSecondaryCalendar(value),
             ),
           ),
+          // ── Quick add calendar ────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 8),
+            child: Text(
+              tr(context, 'Add a calendar'),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+          Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tr(context,
+                        'Tap a calendar type to add it instantly. You can rename it later.'),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: calendarPresets.entries.map((entry) {
+                      final preset = entry.value;
+                      final color = _hexToColor(preset.colorHex);
+                      return ActionChip(
+                        avatar: Text(preset.emoji,
+                            style: const TextStyle(fontSize: 14)),
+                        label: Text(
+                          preset.name,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        backgroundColor: color.withValues(alpha: 0.10),
+                        side: BorderSide(
+                            color: color.withValues(alpha: 0.35),
+                            width: 1),
+                        onPressed: () {
+                          final cal =
+                              provider.addPresetCalendar(entry.key);
+                          if (cal != null && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    '${tr(context, 'Added')} ${cal.name}'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // ── End quick add ─────────────────────────────────────────────
           _section(context, tr(context, 'Time & Date')),
           _card(
             context,
@@ -107,7 +172,8 @@ class SettingsScreen extends StatelessWidget {
                 DropdownMenuItem(
                     value: '24h', child: Text(tr(context, '24-hour'))),
                 DropdownMenuItem(
-                    value: 'biblical', child: Text(tr(context, 'Biblical'))),
+                    value: 'biblical',
+                    child: Text(tr(context, 'Biblical'))),
               ],
               onChanged: (value) => provider.setGlobalTimeFormat(value),
             ),
@@ -264,6 +330,16 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _hexToColor(String hex) {
+    try {
+      final cleaned = hex.replaceFirst('#', '');
+      if (cleaned.length != 6) return const Color(0xFF8B82FF);
+      return Color(int.parse('FF$cleaned', radix: 16));
+    } catch (_) {
+      return const Color(0xFF8B82FF);
+    }
   }
 
   Widget _section(BuildContext context, String title) => Padding(

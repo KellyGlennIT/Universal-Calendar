@@ -7,6 +7,7 @@ import '../models/calendar_event.dart';
 import '../models/special_day.dart';
 import '../services/notification_service.dart';
 import '../utils/calendar_math.dart';
+import '../utils/calendar_presets.dart';
 
 /// Central state for calendars, events, and user preferences.
 class CalendarProvider extends ChangeNotifier {
@@ -242,10 +243,36 @@ class CalendarProvider extends ChangeNotifier {
     _selectedDate = _anchorDate;
   }
 
+  // ── Calendar CRUD ────────────────────────────────────────────────────
+
   void addCalendar(CalendarModel cal) {
     _calendars.add(cal);
     _saveData();
     notifyListeners();
+  }
+
+  /// Creates a calendar from a preset key (e.g. 'julian', 'islamic') and
+  /// adds it to the list. If a calendar with the same name already exists,
+  /// appends a number ("Julian 2", "Julian 3", etc.).
+  ///
+  /// Returns the created calendar, or null if [type] is not a known preset.
+  CalendarModel? addPresetCalendar(String type) {
+    if (!calendarPresets.containsKey(type)) return null;
+
+    // Pick a unique name so the UI never shows two "Julian" entries.
+    final baseName = calendarPresets[type]!.name;
+    var name = baseName;
+    var counter = 2;
+    while (_calendars.any((c) => c.name == name)) {
+      name = '$baseName $counter';
+      counter++;
+    }
+
+    final cal = calendarFromPreset(type, customName: name);
+    _calendars.add(cal);
+    _saveData();
+    notifyListeners();
+    return cal;
   }
 
   void updateCalendar(CalendarModel cal) {
@@ -318,6 +345,8 @@ class CalendarProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Selection ────────────────────────────────────────────────────────
+
   void selectCalendar(String id) {
     if (_selectedCalendarId == id) return;
     _selectedCalendarId = id;
@@ -371,6 +400,8 @@ class CalendarProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Event CRUD ───────────────────────────────────────────────────────
+
   void addEvent(CalendarEvent event) {
     _events.add(event);
     unawaited(CalendarNotificationService.scheduleEvent(event));
@@ -402,6 +433,8 @@ class CalendarProvider extends ChangeNotifier {
       }
     }
   }
+
+  // ── Settings ─────────────────────────────────────────────────────────
 
   Future<void> setPrimaryCalendar(String id) async {
     _primaryCalendarId = id;
@@ -445,6 +478,8 @@ class CalendarProvider extends ChangeNotifier {
 
   String getEffectiveTimeFormat(CalendarModel cal) =>
       _globalTimeFormat ?? cal.timeFormat;
+
+  // ── Reset / backup / restore ─────────────────────────────────────────
 
   Future<void> resetAllData() async {
     await CalendarNotificationService.cancelAll();

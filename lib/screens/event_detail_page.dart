@@ -4,11 +4,11 @@ import '../models/calendar_event.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/calendar_math.dart';
+import '../utils/dialogs.dart';
 import '../utils/formatters.dart';
 import '../l10n/tr.dart';
 import 'add_event_page.dart';
 
-/// Full-screen event details with edit and delete actions.
 class EventDetailPage extends StatelessWidget {
   final CalendarEvent? event;
   const EventDetailPage({super.key, this.event});
@@ -18,8 +18,6 @@ class EventDetailPage extends StatelessWidget {
     context.watch<LocaleProvider>();
     final provider = Provider.of<CalendarProvider>(context);
 
-    // Definite assignment — `selectedEvent` is non-nullable by TYPE, so it
-    // stays safe inside closures like `firstWhere` and `onPressed`.
     final CalendarEvent selectedEvent;
     final widgetEvent = event;
     if (widgetEvent != null) {
@@ -58,9 +56,15 @@ class EventDetailPage extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.delete),
-            onPressed: () {
-              provider.deleteEvent(selectedEvent.id);
-              Navigator.pop(context);
+            onPressed: () async {
+              final confirmed = await confirmDelete(
+                context,
+                tr(context, 'Are you sure you want to delete this event?'),
+              );
+              if (confirmed && context.mounted) {
+                provider.deleteEvent(selectedEvent.id);
+                Navigator.pop(context);
+              }
             },
           ),
         ],
