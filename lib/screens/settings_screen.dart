@@ -1,0 +1,406 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../providers/calendar_provider.dart';
+import '../providers/locale_provider.dart';
+import '../services/notification_service.dart';
+import '../l10n/tr.dart';
+import 'calendar_explainer_page.dart';
+import 'main_scaffold.dart';
+
+/// The Settings tab — language, calendar preferences, time format,
+/// notifications, tour replay, and data management.
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    context.watch<LocaleProvider>();
+    final provider = Provider.of<CalendarProvider>(context);
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text(tr(context, 'Settings')),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _section(context, tr(context, 'Experience')),
+          _card(
+            context,
+            icon: Icons.language,
+            title: tr(context, 'Language'),
+            subtitle:
+                tr(context, 'Choose the language used throughout the app'),
+            trailing: DropdownButton<String>(
+              value: context.watch<LocaleProvider>().languageCode,
+              items: const [
+                DropdownMenuItem(value: 'en', child: Text('English')),
+                DropdownMenuItem(value: 'fr', child: Text('Français')),
+              ],
+              onChanged: (value) async {
+                if (value != null) {
+                  await context.read<LocaleProvider>().setLanguage(value);
+                  provider.rescheduleReminders();
+                }
+              },
+            ),
+          ),
+          _section(context, tr(context, 'Calendar Preferences')),
+          _card(
+            context,
+            icon: Icons.calendar_today,
+            title: tr(context, 'Primary Calendar'),
+            subtitle: tr(context, 'Main calendar for display'),
+            trailing: DropdownButton<String>(
+              value: provider.primaryCalendarId.isEmpty
+                  ? null
+                  : provider.primaryCalendarId,
+              hint: Text(tr(context, 'Select')),
+              items: provider.calendars
+                  .map((cal) =>
+                      DropdownMenuItem(value: cal.id, child: Text(cal.name)))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  provider.setPrimaryCalendar(value);
+                  provider.selectCalendar(value);
+                }
+              },
+            ),
+          ),
+          _card(
+            context,
+            icon: Icons.calendar_view_day,
+            title: tr(context, 'Secondary Calendar'),
+            subtitle: tr(context, 'Shown alongside primary'),
+            trailing: DropdownButton<String?>(
+              value: provider.secondaryCalendarId,
+              hint: Text(tr(context, 'None')),
+              items: [
+                DropdownMenuItem(
+                    value: null, child: Text(tr(context, 'None'))),
+                ...provider.calendars.map((cal) =>
+                    DropdownMenuItem(value: cal.id, child: Text(cal.name))),
+              ],
+              onChanged: (value) => provider.setSecondaryCalendar(value),
+            ),
+          ),
+          _section(context, tr(context, 'Time & Date')),
+          _card(
+            context,
+            icon: Icons.access_time,
+            title: tr(context, 'Time Format'),
+            subtitle: tr(context, 'Used across the app'),
+            trailing: DropdownButton<String?>(
+              value: provider.globalTimeFormat,
+              hint: Text(tr(context, 'Calendar default')),
+              items: [
+                DropdownMenuItem(
+                    value: null,
+                    child: Text(tr(context, 'Calendar default'))),
+                DropdownMenuItem(
+                    value: '12h', child: Text(tr(context, '12-hour'))),
+                DropdownMenuItem(
+                    value: '24h', child: Text(tr(context, '24-hour'))),
+                DropdownMenuItem(
+                    value: 'biblical', child: Text(tr(context, 'Biblical'))),
+              ],
+              onChanged: (value) => provider.setGlobalTimeFormat(value),
+            ),
+          ),
+          _card(
+            context,
+            icon: Icons.wb_sunny,
+            title: tr(context, 'Sunrise Hour'),
+            subtitle: tr(context, 'Start of first biblical hour'),
+            trailing: DropdownButton<int>(
+              value: provider.sunriseHour,
+              items: const [
+                DropdownMenuItem(value: 6, child: Text('6:00 AM')),
+                DropdownMenuItem(value: 7, child: Text('7:00 AM')),
+              ],
+              onChanged: (value) {
+                if (value != null) provider.setSunriseHour(value);
+              },
+            ),
+          ),
+          _switch(
+            context,
+            title: tr(context, 'Show Seconds'),
+            subtitle: tr(context, 'Display seconds in times'),
+            value: provider.showSeconds,
+            onChanged: provider.setShowSeconds,
+          ),
+          _switch(
+            context,
+            title: tr(context, 'Day/Night Indicator'),
+            subtitle: tr(context, 'Show sun/moon icons'),
+            value: provider.showDayNight,
+            onChanged: provider.setShowDayNight,
+          ),
+          _section(context, tr(context, 'Notifications')),
+          _card(
+            context,
+            icon: Icons.notifications_active_outlined,
+            title: tr(context, 'Allow notifications'),
+            subtitle: tr(context,
+                'Request permission for audible calendar alerts'),
+            onTap: () async {
+              final granted =
+                  await CalendarNotificationService.requestPermission();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(
+                  granted
+                      ? tr(context, 'Notification permission granted')
+                      : tr(context,
+                          'Notifications are disabled in system settings'),
+                ),
+              ));
+              if (granted) {
+                provider.rescheduleReminders();
+                await CalendarNotificationService.sendTestNotification();
+              }
+            },
+          ),
+          _card(
+            context,
+            icon: Icons.volume_up_outlined,
+            title: tr(context, 'Test notification sound'),
+            subtitle: tr(context,
+                'Send a test alert to verify delivery and sound'),
+            onTap: () async {
+              final granted =
+                  await CalendarNotificationService.requestPermission();
+              if (granted) {
+                provider.rescheduleReminders();
+                await CalendarNotificationService.sendTestNotification();
+              } else if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(tr(context,
+                      'Enable notifications in Android settings first')),
+                ));
+              }
+            },
+          ),
+          _section(context, tr(context, 'Experience')),
+          _card(
+            context,
+            icon: Icons.menu_book_outlined,
+            title: tr(context, 'Calendar Guide'),
+            subtitle: tr(context, 'Learn about each calendar in the app'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const CalendarExplainerPage()),
+            ),
+          ),
+          _card(
+            context,
+            icon: Icons.explore_outlined,
+            title: tr(context, 'Replay app tour'),
+            subtitle: tr(context, 'A quick guide to the main features'),
+            onTap: () => context
+                .findAncestorStateOfType<MainScaffoldState>()
+                ?.showFirstUseTour(force: true),
+          ),
+          _section(context, tr(context, 'Data')),
+          _card(
+            context,
+            icon: Icons.download_outlined,
+            title: tr(context, 'Backup All Data'),
+            subtitle:
+                tr(context, 'Copy a full JSON backup to the clipboard'),
+            onTap: () async {
+              final payload = provider.getBackupPayload();
+              final text =
+                  const JsonEncoder.withIndent('  ').convert(payload);
+              await Clipboard.setData(ClipboardData(text: text));
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(tr(context, 'Backup copied to clipboard')),
+                duration: const Duration(seconds: 3),
+              ));
+            },
+          ),
+          _card(
+            context,
+            icon: Icons.upload_outlined,
+            title: tr(context, 'Restore from backup'),
+            subtitle: tr(context, 'Paste a JSON backup to restore'),
+            onTap: () => _showRestoreDialog(context, provider),
+          ),
+          _card(
+            context,
+            icon: Icons.restart_alt,
+            title: tr(context, 'Reset All Data'),
+            subtitle: tr(context, 'Delete all calendars and events'),
+            onTap: () => _confirmReset(context, provider),
+          ),
+          _card(
+            context,
+            icon: Icons.info_outline,
+            title: tr(context, 'About'),
+            subtitle: 'Version 3.0',
+            onTap: () => showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: Text(tr(context, 'Universal Calendar')),
+                content: Text(tr(context,
+                    'A fully customizable calendar app with dual-calendar support and Christian tools.')),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(tr(context, 'Close')),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _section(BuildContext context, String title) => Padding(
+        padding: const EdgeInsets.only(top: 16, bottom: 8),
+        child: Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+      );
+
+  Widget _card(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(icon, color: Theme.of(context).primaryColor),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: trailing,
+        onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _switch(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: SwitchListTile(
+        secondary:
+            Icon(Icons.toggle_on, color: Theme.of(context).primaryColor),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        value: value,
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  void _showRestoreDialog(
+      BuildContext context, CalendarProvider provider) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(tr(context, 'Restore from backup')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              tr(context, 'Paste the backup JSON here'),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              maxLines: 8,
+              decoration: const InputDecoration(
+                hintText: '{ "calendars": [...], "events": [...] }',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(tr(context, 'Cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                final decoded = json.decode(controller.text);
+                if (decoded is! Map) {
+                  throw const FormatException('Not a JSON object');
+                }
+                final ok = await provider
+                    .restoreFromBackup(Map<String, dynamic>.from(decoded));
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(
+                    ok
+                        ? tr(context, 'Backup restored')
+                        : tr(context, 'Invalid backup'),
+                  ),
+                ));
+              } catch (_) {
+                if (!dialogContext.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(tr(context, 'Invalid backup')),
+                ));
+              }
+            },
+            child: Text(tr(context, 'Restore')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmReset(BuildContext context, CalendarProvider provider) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(tr(context, 'Reset All Data')),
+        content: Text(tr(context,
+            'Are you sure you want to delete all calendars and events? This cannot be undone.')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(tr(context, 'Cancel')),
+          ),
+          TextButton(
+            onPressed: () async {
+              await provider.resetAllData();
+              if (context.mounted) Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(tr(context, 'Reset')),
+          ),
+        ],
+      ),
+    );
+  }
+}
