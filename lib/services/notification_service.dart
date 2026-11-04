@@ -18,7 +18,7 @@ class CalendarNotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static const String _channelBaseId = 'uc_calendar_alerts_v6';
+  static const String _channelBaseId = 'uc_calendar_alerts_v7';
   static int _testSeq = 9000;
   static const int _maxOccurrences = 100;
   static const int _escalationCount = 4;
