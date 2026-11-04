@@ -4,43 +4,61 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:permission_handler/permission_handler.dart';
+
 import '../models/calendar_event.dart';
 import '../utils/notification_sounds.dart';
 
-/// Holds the event ID from a tapped notification until the app's navigation
-/// stack is ready to consume it (or `null` if no notification was tapped).
-///
-/// Written by `CalendarNotificationService.initialize()`'s tap handler and by
-/// the cold-start launch check. Read by `MainScaffold._handleNotificationLaunch()`.
 final ValueNotifier<String?> pendingNotificationEventId =
     ValueNotifier<String?>(null);
 
-/// The local-notification engine.
-///
-/// Handles:
-///   • Timezone-aware scheduling via `tz.TZDateTime`
-///   • Android 13 POST_NOTIFICATIONS runtime permission
-///   • Android 12+ SCHEDULE_EXACT_ALARM permission
-///   • Automatic fallback to inexact alarms when exact permission is denied
-///   • Cancel-before-reschedule (no orphan reminders)
-///   • Cancel-all on reset
 class CalendarNotificationService {
   CalendarNotificationService._();
 
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'universal_calendar_alerts_v3',
-    'Calendar alerts',
-    description: 'Audible reminders and calendar alerts',
-    importance: Importance.max,
-    playSound: true,
-    enableVibration: true,
-  );
+  // ── Channel-per-tone, base v5 ─────────────────────────────────────────
+  // v5 = fresh channels after the old v3 channels were created without a
+  // sound. Android caches a channel's sound permanently, so bumping the
+  // base ID is the only reliable way to get a sound baked in on installs
+  // that already have a stale channel.
+  static const String _channelBaseId = 'uc_calendar_alerts_v5';
 
-  /// Initialises the plugin, sets up the notification channel, installs the
-  /// tap handler, and checks for a cold-start launch from a notification.
+  // Unique test IDs so repeated previews each fire a fresh notification
+  // (re-showing the same notification ID can skip the sound on some OEMs).
+  static int _testSeq = 9000;
+
+  static String _slug(String? s) {
+    if (s == null || s.isEmpty) return 'default';
+    return s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+  }
+
+  static String _channelIdForTone(String? toneId) =>
+      '${_channelBaseId}_${_slug(toneId)}';
+
+  static AndroidNotificationChannel _buildChannel(String? toneId) {
+    return AndroidNotificationChannel(
+      _channelIdForTone(toneId),
+      'Calendar alerts',
+      description: 'Audible reminders and calendar alerts',
+      importance: Importance.max,
+      playSound: true,
+      sound: androidNotificationSoundFor(toneId),
+      enableVibration: true,
+    );
+  }
+
+  static Future<AndroidNotificationChannel> _ensureChannel(
+      String? toneId) async {
+    final channel = _buildChannel(toneId);
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.createNotificationChannel(channel);
+    return channel;
+  }
+
+  // ── Initialisation ────────────────────────────────────────────────────
   static Future<void> initialize() async {
     if (kIsWeb) return;
     tz_data.initializeTimeZones();
@@ -53,8 +71,7 @@ class CalendarNotificationService {
         tz.setLocalLocation(tz.getLocation('Africa/Douala'));
       } catch (_) {}
     }
-    const android =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -68,9 +85,10 @@ class CalendarNotificationService {
         }
       },
     );
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    await androidPlugin?.createNotificationChannel(_channel);
+    // Pre-create the default channel so the first notification always
+    // lands on a properly configured channel.
+    await _ensureChannel(null);
+
     final launch = await _plugin.getNotificationAppLaunchDetails();
     if (launch?.didNotificationLaunchApp == true) {
       final payload = launch?.notificationResponse?.payload;
@@ -80,8 +98,7 @@ class CalendarNotificationService {
     }
   }
 
-  /// Requests notification and exact-alarm permissions. Returns `true` when
-  /// POST_NOTIFICATIONS is granted (exact-alarm is best-effort).
+  // ── Permissions ──────────────────────────────────────────────────────
   static Future<bool> requestPermission() async {
     if (kIsWeb) return false;
     final android = _plugin.resolvePlatformSpecificImplementation<
@@ -113,23 +130,25 @@ class CalendarNotificationService {
     return granted ?? false;
   }
 
-  /// Plays [toneId] immediately so the user can audition it in the picker.
-  ///
-  /// The tone is resolved to its channel sound; the platform default is used
-  /// when the tone has no bundled resource.
+  static Future<bool> openSystemAppSettings() => openAppSettings();
+
+  // ── Preview / test ────────────────────────────────────────────────────
   static Future<void> previewTone(String? toneId) =>
       sendTestNotification(toneId: toneId);
 
-  /// Fires an immediate test notification — used by Settings → "Test sound"
-  /// and by the tone picker's preview buttons.
+  /// Fires an immediate notification using the tone's dedicated channel.
+  /// Each call uses a unique notification ID so the OS plays the sound
+  /// every time, instead of silently replacing an existing notification.
   static Future<void> sendTestNotification({String? toneId}) async {
     if (kIsWeb) return;
+    final channel = await _ensureChannel(toneId);
+
     final prefs = await SharedPreferences.getInstance();
     final isFrench = prefs.getString('app_language') == 'fr';
-    final androidSound = androidNotificationSoundFor(toneId);
-    final iosSound = iosSoundFor(toneId);
+    final id = ++_testSeq;
+
     await _plugin.show(
-      9001,
+      id,
       isFrench
           ? 'Les notifications fonctionnent'
           : 'Notifications are working',
@@ -138,13 +157,13 @@ class CalendarNotificationService {
           : 'Universal Calendar can play reminder sounds on this device.',
       NotificationDetails(
         android: AndroidNotificationDetails(
-          _channel.id,
-          _channel.name,
-          channelDescription: _channel.description,
-          importance: Importance.max,
+          channel.id,
+          channel.name,
+          channelDescription: channel.description,
+          importance: channel.importance,
           priority: Priority.max,
           playSound: true,
-          sound: androidSound,
+          sound: channel.sound,
           enableVibration: true,
           category: AndroidNotificationCategory.alarm,
           visibility: NotificationVisibility.public,
@@ -152,7 +171,7 @@ class CalendarNotificationService {
         iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentSound: true,
-          sound: iosSound,
+          sound: iosSoundFor(toneId),
           presentBadge: true,
           interruptionLevel: InterruptionLevel.timeSensitive,
         ),
@@ -160,8 +179,7 @@ class CalendarNotificationService {
     );
   }
 
-  /// FNV-1a hash — gives a stable 31-bit int ID for a String event ID, so
-  /// cancel can find the same slot that schedule used.
+  // ── Scheduling ────────────────────────────────────────────────────────
   static int _notificationId(String id) {
     var hash = 0x811c9dc5;
     for (final unit in id.codeUnits) {
@@ -170,7 +188,6 @@ class CalendarNotificationService {
     return hash == 0 ? 1 : hash;
   }
 
-  /// Cancels the reminder tied to [eventId].
   static Future<void> cancelEvent(String eventId) async {
     if (kIsWeb) return;
     try {
@@ -180,7 +197,6 @@ class CalendarNotificationService {
     }
   }
 
-  /// Cancels every scheduled reminder — used on reset and on backup restore.
   static Future<void> cancelAll() async {
     if (kIsWeb) return;
     try {
@@ -190,8 +206,6 @@ class CalendarNotificationService {
     }
   }
 
-  /// Schedules a reminder for [event] if `reminderMinutesBefore` is set and
-  /// in the future. Cancels any existing reminder for the same event first.
   static Future<void> scheduleEvent(CalendarEvent event) async {
     if (kIsWeb) return;
     try {
@@ -203,9 +217,9 @@ class CalendarNotificationService {
       if (dateParts.length != 3 || timeParts.length < 2) return;
       final eventLocal = DateTime(
           dateParts[0], dateParts[1], dateParts[2], timeParts[0], timeParts[1]);
-      final reminderLocal =
-          eventLocal.subtract(Duration(minutes: minutes));
+      final reminderLocal = eventLocal.subtract(Duration(minutes: minutes));
       if (!reminderLocal.isAfter(DateTime.now())) return;
+
       final scheduled = tz.TZDateTime.from(reminderLocal, tz.local);
       final prefs = await SharedPreferences.getInstance();
       final isFrench = prefs.getString('app_language') == 'fr';
@@ -213,6 +227,9 @@ class CalendarNotificationService {
           AndroidFlutterLocalNotificationsPlugin>();
       final exactAllowed =
           await android?.canScheduleExactNotifications() ?? false;
+
+      final channel = await _ensureChannel(event.reminderSound);
+
       final body = minutes == 0
           ? (isFrench
               ? 'Votre événement commence maintenant.'
@@ -220,8 +237,7 @@ class CalendarNotificationService {
           : (isFrench
               ? 'Votre événement commence dans $minutes minutes.'
               : 'Your event starts in $minutes minutes.');
-      final androidSound = androidNotificationSoundFor(event.reminderSound);
-      final iosSound = iosSoundFor(event.reminderSound);
+
       await _plugin.zonedSchedule(
         _notificationId(event.id),
         event.title,
@@ -229,13 +245,13 @@ class CalendarNotificationService {
         scheduled,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            _channel.id,
-            _channel.name,
-            channelDescription: _channel.description,
-            importance: Importance.max,
+            channel.id,
+            channel.name,
+            channelDescription: channel.description,
+            importance: channel.importance,
             priority: Priority.max,
             playSound: true,
-            sound: androidSound,
+            sound: channel.sound,
             enableVibration: true,
             category: AndroidNotificationCategory.reminder,
             ticker: 'Calendar reminder',
@@ -244,7 +260,7 @@ class CalendarNotificationService {
           iOS: DarwinNotificationDetails(
             presentAlert: true,
             presentSound: true,
-            sound: iosSound,
+            sound: iosSoundFor(event.reminderSound),
             presentBadge: true,
             interruptionLevel: InterruptionLevel.timeSensitive,
           ),
@@ -257,5 +273,19 @@ class CalendarNotificationService {
     } catch (error) {
       debugPrint('Could not schedule reminder for ${event.id}: $error');
     }
+  }
+
+  // ── Microphone (unchanged — for future voice features only) ───────────
+  static Future<bool> requestMicrophonePermission() async {
+    if (kIsWeb) return false;
+    final status = await Permission.microphone.status;
+    if (status.isGranted) return true;
+    final result = await Permission.microphone.request();
+    return result.isGranted;
+  }
+
+  static Future<bool> openAppSettingsForMicrophone() async {
+    if (kIsWeb) return false;
+    return openAppSettings();
   }
 }

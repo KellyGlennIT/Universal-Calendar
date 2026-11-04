@@ -27,6 +27,8 @@ import 'screens/gratitude_journal_page.dart';
 import 'screens/prayer_timer_page.dart';
 import 'screens/scripture_memory_page.dart';
 import 'screens/calendar_explainer_page.dart';
+import 'screens/pdf_export_page.dart';
+import 'screens/agenda_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,6 +94,8 @@ class UniversalCalendarApp extends StatelessWidget {
         '/prayer_timer': (context) => const PrayerTimerPage(),
         '/scripture_memory': (context) => const ScriptureMemoryPage(),
         '/calendar_explainer': (context) => const CalendarExplainerPage(),
+        '/pdf_export': (context) => const PdfExportPage(),
+        '/agenda': (context) => const AgendaPage(),
       },
     );
   }

@@ -17,6 +17,18 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     context.watch<LocaleProvider>();
     final provider = Provider.of<CalendarProvider>(context);
+
+    // ── Duplicate detection for the "Add a calendar" section ─────────────
+    // A preset counts as "already added" when a calendar with the same
+    // display name exists. Presets always ship with unique names, so this
+    // catches the duplicate case reliably and stays out of the way for
+    // calendars the user created manually.
+    final addedNames = provider.calendars.map((c) => c.name).toSet();
+    final addedPresetCount = calendarPresets.values
+        .where((p) => addedNames.contains(p.name))
+        .length;
+    final totalPresetCount = calendarPresets.length;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -88,15 +100,40 @@ class SettingsScreen extends StatelessWidget {
               onChanged: (value) => provider.setSecondaryCalendar(value),
             ),
           ),
-          // ── Quick add calendar ────────────────────────────────────────
+          // ── Add a calendar (advanced) ───────────────────────────────
           Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 8),
-            child: Text(
-              tr(context, 'Add a calendar'),
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.bold,
+            padding: const EdgeInsets.only(top: 16, bottom: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    tr(context, 'Add a calendar'),
+                    style:
+                        Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: Theme.of(context).primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
                   ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .primaryColor
+                        .withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$addedPresetCount / $totalPresetCount',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Card(
@@ -108,52 +145,169 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   Text(
                     tr(context,
-                        'Tap a calendar type to add it instantly. You can rename it later.'),
+                        'Tap a calendar type to add it instantly. Calendars you already have appear with a checkmark.'),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: calendarPresets.entries.map((entry) {
-                      final preset = entry.value;
-                      final color = _hexToColor(preset.colorHex);
-                      return ActionChip(
-                        avatar: Text(preset.emoji,
-                            style: const TextStyle(fontSize: 14)),
-                        label: Text(
-                          preset.name,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: color,
-                            fontWeight: FontWeight.w600,
+                  if (calendarPresets.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        tr(context, 'No preset calendars available.'),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.grey),
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children:
+                          calendarPresets.entries.map((entry) {
+                        final preset = entry.value;
+                        final color = _hexToColor(preset.colorHex);
+                        final isAdded =
+                            addedNames.contains(preset.name);
+                        return FilterChip(
+                          avatar: isAdded
+                              ? Icon(
+                                  Icons.check_circle,
+                                  size: 16,
+                                  color: color,
+                                )
+                              : Text(
+                                  preset.emoji,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                          label: Text(
+                            preset.name,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  isAdded ? Colors.grey : color,
+                              fontWeight: isAdded
+                                  ? FontWeight.w500
+                                  : FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        backgroundColor: color.withValues(alpha: 0.10),
-                        side: BorderSide(
-                            color: color.withValues(alpha: 0.35),
-                            width: 1),
-                        onPressed: () {
-                          final cal =
-                              provider.addPresetCalendar(entry.key);
-                          if (cal != null && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    '${tr(context, 'Added')} ${cal.name}'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          }
-                        },
-                      );
-                    }).toList(),
+                          selected: isAdded,
+                          showCheckmark: false,
+                          backgroundColor:
+                              color.withValues(alpha: 0.10),
+                          selectedColor:
+                              Colors.grey.withValues(alpha: 0.15),
+                          side: BorderSide(
+                            color: isAdded
+                                ? Colors.grey.withValues(alpha: 0.35)
+                                : color.withValues(alpha: 0.35),
+                            width: 1,
+                          ),
+                          onSelected: (_) {
+                            if (isAdded) {
+                              // Duplicate guard — tell the user why
+                              // nothing happened instead of silently
+                              // ignoring the tap.
+                              ScaffoldMessenger.of(context)
+                                  .hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '${preset.name} — '
+                                    '${tr(context, 'already added')}',
+                                  ),
+                                  duration:
+                                      const Duration(seconds: 2),
+                                  behavior:
+                                      SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+                            final cal = provider
+                                .addPresetCalendar(entry.key);
+                            if (cal != null && context.mounted) {
+                              ScaffoldMessenger.of(context)
+                                  .hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '${tr(context, 'Added')} '
+                                    '${cal.name}',
+                                  ),
+                                  duration:
+                                      const Duration(seconds: 2),
+                                  behavior:
+                                      SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                  const SizedBox(height: 4),
+                  // ── Create custom calendar ───────────────────────
+                  InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => Navigator.pushNamed(
+                        context, '/create_calendar'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 4),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.add_circle_outline,
+                            color: Theme.of(context).primaryColor,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tr(context,
+                                      'Create a custom calendar'),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context)
+                                        .primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  tr(context,
+                                      'Design your own months, week length, and day names'),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right,
+                            color: Theme.of(context).primaryColor,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          // ── End quick add ─────────────────────────────────────────────
+          // ── End add-calendar section ────────────────────────────────
           _section(context, tr(context, 'Time & Date')),
           _card(
             context,

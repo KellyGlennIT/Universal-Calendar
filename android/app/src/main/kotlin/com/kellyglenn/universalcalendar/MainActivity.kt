@@ -1,4 +1,4 @@
-package com.example.universal_calendar
+package com.kellyglenn.universalcalendar
 
 import io.flutter.embedding.android.FlutterActivity
 

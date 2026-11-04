@@ -12,7 +12,6 @@ import '../l10n/tr.dart';
 import 'add_event_page.dart';
 import 'day_view_page.dart';
 import 'equivalents_page.dart';
-import 'event_detail_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -63,12 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: const TextStyle(fontSize: 12)),
                     icon: const Icon(Icons.view_week, size: 18),
                   ),
-                  ButtonSegment(
-                    value: 'agenda',
-                    label: Text(tr(context, 'Agenda'),
-                        style: const TextStyle(fontSize: 12)),
-                    icon: const Icon(Icons.view_agenda, size: 18),
-                  ),
                 ],
                 selected: {_viewMode},
                 showSelectedIcon: false,
@@ -109,9 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: const _CalendarGrid(),
                         ),
                       )
-                    : _viewMode == 'week'
-                        ? const _WeekCalendarView(key: ValueKey('week'))
-                        : const _AgendaCalendarView(key: ValueKey('agenda')),
+                    : const _WeekCalendarView(key: ValueKey('week')),
               ),
             ),
             _BottomBar(provider: provider),
@@ -148,10 +139,13 @@ class _BottomBar extends StatelessWidget {
         children: [
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: () => provider.changeMonth(-1),
-              icon: const Icon(Icons.chevron_left, size: 18),
-              label: Text(tr(context, 'Prev'),
-                  style: const TextStyle(fontSize: 12)),
+              onPressed: () => provider.goToToday(),
+              icon: const Icon(Icons.today_rounded, size: 18),
+              label: Text(
+                tr(context, 'Today'),
+                style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.bold),
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Theme.of(context).primaryColor,
                 side: BorderSide(
@@ -164,39 +158,22 @@ class _BottomBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            flex: 2,
             child: ElevatedButton.icon(
-              onPressed: () => provider.goToToday(),
-              icon: const Icon(Icons.today, size: 16),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddEventPage()),
+              ),
+              icon: const Icon(Icons.add_rounded, size: 18),
               label: Text(
-                tr(context, 'Today'),
+                tr(context, 'Add event'),
                 style: const TextStyle(
                     fontSize: 13, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () => provider.changeMonth(1),
-              icon: const Icon(Icons.chevron_right, size: 18),
-              label: Text(tr(context, 'Next'),
-                  style: const TextStyle(fontSize: 12)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Theme.of(context).primaryColor,
-                side: BorderSide(
-                    color: Theme.of(context)
-                        .primaryColor
-                        .withValues(alpha: 0.3)),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -420,8 +397,7 @@ class _MultiCalendarStrip extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color:
-                              isSelected ? cal.color : Colors.grey,
+                          color: isSelected ? cal.color : Colors.grey,
                         ),
                       ),
                     ],
@@ -647,8 +623,7 @@ class _WeekCalendarView extends StatelessWidget {
                     onTap: () => provider.selectDate(date),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      margin:
-                          const EdgeInsets.symmetric(horizontal: 2),
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
                       padding: const EdgeInsets.symmetric(
                           vertical: 10, horizontal: 2),
                       decoration: BoxDecoration(
@@ -914,93 +889,6 @@ class _WeekCalendarView extends StatelessWidget {
           }),
         ],
       ),
-    );
-  }
-}
-
-class _AgendaCalendarView extends StatelessWidget {
-  const _AgendaCalendarView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    context.watch<LocaleProvider>();
-    final provider = context.watch<CalendarProvider>();
-    final localeCode = context.watch<LocaleProvider>().languageCode;
-    final today = DateTime.now();
-
-    final events = provider.events.where((event) {
-      final date = CalendarMath.parseDate(event.date, 'YYYY-MM-DD');
-      return !DateTime(date.year, date.month, date.day)
-          .isBefore(DateTime(today.year, today.month, today.day));
-    }).toList()
-      ..sort((a, b) => CalendarMath.parseDate(a.date, 'YYYY-MM-DD')
-          .compareTo(CalendarMath.parseDate(b.date, 'YYYY-MM-DD')));
-
-    if (events.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.event_note,
-                  size: 48,
-                  color: Theme.of(context).textTheme.bodySmall?.color),
-              const SizedBox(height: 16),
-              Text(
-                tr(context,
-                    'No upcoming events. Add an event to start your agenda.'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).textTheme.bodySmall?.color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-      itemCount: events.length,
-      itemBuilder: (context, index) {
-        final event = events[index];
-        final date = CalendarMath.parseDate(event.date, 'YYYY-MM-DD');
-        final subtitleParts = <String>[
-          DateFormat('EEE, d MMM y', localeCode).format(date),
-          event.isAllDay
-              ? tr(context, 'All day')
-              : '${event.time}–${formatEventEnd(event)}',
-        ];
-        if (event.notes.isNotEmpty) subtitleParts.add(event.notes);
-        return Card(
-          margin: const EdgeInsets.only(bottom: 10),
-          child: ListTile(
-            leading: Container(
-              width: 4,
-              height: 42,
-              decoration: BoxDecoration(
-                color: event.color,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            title: Text(event.title,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(
-              subtitleParts.join(' • '),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            isThreeLine: event.notes.isNotEmpty,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => EventDetailPage(event: event)),
-            ),
-          ),
-        );
-      },
     );
   }
 }

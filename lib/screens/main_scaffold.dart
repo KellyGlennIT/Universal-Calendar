@@ -6,7 +6,6 @@ import '../providers/locale_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../services/notification_service.dart';
 import '../l10n/tr.dart';
-import 'add_event_page.dart';
 import 'app_drawer.dart';
 import 'calendars_screen.dart';
 import 'christian_tools_page.dart';
@@ -26,9 +25,6 @@ class MainScaffoldState extends State<MainScaffold> {
   @override
   void initState() {
     super.initState();
-    // Warm-start notification taps: the ValueNotifier fires the listener
-    // whenever CalendarNotificationService.initialize()'s tap handler sets
-    // a new pending event id, even after the app is already running.
     pendingNotificationEventId.addListener(_onNotificationTapped);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showFirstUseTour();
@@ -227,11 +223,6 @@ class MainScaffoldState extends State<MainScaffold> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.calendar_today),
-              onPressed: () => navProvider.setIndex(0),
-              tooltip: tr(context, 'Today'),
-            ),
-            IconButton(
               icon: const Icon(Icons.search),
               onPressed: () => Navigator.push(
                 context,
@@ -257,16 +248,11 @@ class MainScaffoldState extends State<MainScaffold> {
             SettingsScreen(),
           ],
         ),
-        floatingActionButton: navProvider.currentIndex == 0
-            ? FloatingActionButton.extended(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AddEventPage()),
-                ),
-                icon: const Icon(Icons.add),
-                label: Text(tr(context, 'Event')),
-              )
-            : null,
+        // ── NO bottomNavigationBar here ─────────────────────────────────
+        // The Today + Add event buttons live inside HomeScreen's own
+        // _BottomBar (see home_screen.dart). Putting them here again
+        // would render TWO bars stacked at the bottom of the Home tab.
+        // ────────────────────────────────────────────────────────────────
       ),
     );
   }

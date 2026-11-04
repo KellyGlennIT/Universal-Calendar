@@ -9,6 +9,7 @@ import 'christian_tools_page.dart';
 import 'create_calendar_page.dart';
 import 'equivalents_page.dart';
 import 'pdf_export_page.dart';
+import 'agenda_page.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -61,10 +62,30 @@ class AppDrawer extends StatelessWidget {
                 ],
               ),
             ),
+
+            // ── Primary views ──────────────────────────────────────
             _drawerTile(context, Icons.home, tr(context, 'Home'), 0,
                 nav.currentIndex, () => nav.setIndex(0)),
+
+            _drawerTile(
+              context,
+              Icons.event_note_outlined,
+              tr(context, 'Agenda'),
+              -1,
+              nav.currentIndex,
+              () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AgendaPage()),
+                );
+              },
+            ),
+
             _drawerTile(context, Icons.calendar_month, tr(context, 'Calendars'),
                 1, nav.currentIndex, () => nav.setIndex(1)),
+
+            // ── Actions ────────────────────────────────────────────
             _drawerTile(context, Icons.add, tr(context, 'Create Calendar'), -1,
                 nav.currentIndex, () {
               Navigator.pop(context);
@@ -73,6 +94,7 @@ class AppDrawer extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const CreateCalendarPage()),
               );
             }),
+
             _drawerTile(context, Icons.swap_horiz,
                 tr(context, 'Find Equivalents'), -1, nav.currentIndex, () {
               Navigator.pop(context);
@@ -81,6 +103,7 @@ class AppDrawer extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const EquivalentsPage()),
               );
             }),
+
             _drawerTile(context, Icons.picture_as_pdf,
                 tr(context, 'Export PDF'), -1, nav.currentIndex, () {
               Navigator.pop(context);
@@ -89,6 +112,7 @@ class AppDrawer extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const PdfExportPage()),
               );
             }),
+
             _drawerTile(context, Icons.auto_awesome,
                 tr(context, 'Christian Tools'), -1, nav.currentIndex, () {
               Navigator.pop(context);
@@ -97,6 +121,7 @@ class AppDrawer extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const ChristianToolsPage()),
               );
             }),
+
             _drawerTile(context, Icons.menu_book_outlined,
                 tr(context, 'Calendar Guide'), -1, nav.currentIndex, () {
               Navigator.pop(context);
@@ -106,9 +131,13 @@ class AppDrawer extends StatelessWidget {
                     builder: (_) => const CalendarExplainerPage()),
               );
             }),
+
             const Divider(),
+
+            // ── Settings & About ───────────────────────────────────
             _drawerTile(context, Icons.settings, tr(context, 'Settings'), 2,
                 nav.currentIndex, () => nav.setIndex(2)),
+
             ListTile(
               leading: const Icon(Icons.info_outline),
               title: Text(tr(context, 'About')),
@@ -128,7 +157,7 @@ class AppDrawer extends StatelessWidget {
     int currentIndex,
     VoidCallback onTap,
   ) {
-    final isSelected = index == currentIndex;
+    final isSelected = index == currentIndex && index >= 0;
     return ListTile(
       leading: Icon(
         icon,
