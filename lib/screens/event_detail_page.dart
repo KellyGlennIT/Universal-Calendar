@@ -6,6 +6,7 @@ import '../providers/locale_provider.dart';
 import '../utils/calendar_math.dart';
 import '../utils/dialogs.dart';
 import '../utils/formatters.dart';
+import '../utils/notification_sounds.dart';
 import '../l10n/tr.dart';
 import 'add_event_page.dart';
 
@@ -74,6 +75,7 @@ class EventDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Title row ────────────────────────────────────────────
             Row(children: [
               Container(
                 width: 16,
@@ -86,13 +88,53 @@ class EventDetailPage extends StatelessWidget {
                   child: Text(selectedEvent.title,
                       style: Theme.of(context).textTheme.titleLarge)),
             ]),
+
+            // ── Badges (multi-day, alarm, repeat) ────────────────────
+            if (selectedEvent.isMultiDay ||
+                selectedEvent.alarmStyle ||
+                selectedEvent.repeatMode != 'once') ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  if (selectedEvent.isMultiDay)
+                    _badge(
+                      context,
+                      Icons.date_range,
+                      _multiDayLabel(context, selectedEvent),
+                      selectedEvent.color,
+                    ),
+                  if (selectedEvent.alarmStyle)
+                    _badge(
+                      context,
+                      Icons.alarm,
+                      tr(context, 'Alarm-style'),
+                      Colors.orange.shade700,
+                    ),
+                  if (selectedEvent.repeatMode != 'once')
+                    _badge(
+                      context,
+                      Icons.repeat,
+                      selectedEvent.repeatMode == 'daily'
+                          ? tr(context, 'Repeats daily')
+                          : tr(context, 'Repeats weekly'),
+                      Theme.of(context).primaryColor,
+                    ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: 20),
+
+            // ── When / where / reminder card ────────────────────────
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Start date
                     Row(children: [
                       const Icon(Icons.calendar_today,
                           size: 18, color: Colors.grey),
@@ -108,6 +150,29 @@ class EventDetailPage extends StatelessWidget {
                         ),
                       ),
                     ]),
+
+                    // End date (only for multi-day)
+                    if (selectedEvent.isMultiDay) ...[
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        Icon(Icons.event_outlined,
+                            size: 18, color: selectedEvent.color),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${tr(context, 'Ends')}: '
+                            '${CalendarMath.formatDate(
+                              CalendarMath.parseDate(
+                                  selectedEvent.endDate!, 'YYYY-MM-DD'),
+                              cal.dateFormat,
+                            )}',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                      ]),
+                    ],
+
+                    // Time
                     const SizedBox(height: 8),
                     Row(children: [
                       const Icon(Icons.access_time,
@@ -123,6 +188,8 @@ class EventDetailPage extends StatelessWidget {
                         ),
                       ),
                     ]),
+
+                    // Reminder
                     if (selectedEvent.reminderMinutesBefore != null) ...[
                       const SizedBox(height: 8),
                       Row(children: [
@@ -137,7 +204,43 @@ class EventDetailPage extends StatelessWidget {
                           ),
                         ),
                       ]),
+                      // Reminder sound label
+                      const SizedBox(height: 4),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 26),
+                        child: Text(
+                          tr(context,
+                              toneById(selectedEvent.reminderSound).label),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.color,
+                          ),
+                        ),
+                      ),
                     ],
+
+                    // Repeat until
+                    if (selectedEvent.repeatMode != 'once' &&
+                        selectedEvent.repeatUntil != null) ...[
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        const Icon(Icons.event_repeat,
+                            size: 18, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${tr(context, 'Until')} '
+                            '${CalendarMath.formatDate(selectedEvent.repeatUntil!, cal.dateFormat)}',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                      ]),
+                    ],
+
+                    // Calendar
                     const SizedBox(height: 8),
                     Row(children: [
                       Icon(Icons.calendar_month, size: 18, color: cal.color),
@@ -152,6 +255,8 @@ class EventDetailPage extends StatelessWidget {
                 ),
               ),
             ),
+
+            // ── Notes ────────────────────────────────────────────────
             if (selectedEvent.notes.isNotEmpty) ...[
               const SizedBox(height: 16),
               Card(
@@ -177,6 +282,53 @@ class EventDetailPage extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────
+  String _multiDayLabel(BuildContext context, CalendarEvent event) {
+    try {
+      final start = CalendarMath.parseDate(event.date, 'YYYY-MM-DD');
+      final end = CalendarMath.parseDate(event.endDate!, 'YYYY-MM-DD');
+      final total = end.difference(start).inDays + 1;
+      final today = DateTime.now();
+      final dayNumber = DateTime(today.year, today.month, today.day)
+              .difference(DateTime(start.year, start.month, start.day))
+              .inDays +
+          1;
+      if (dayNumber >= 1 && dayNumber <= total) {
+        return '$total ${tr(context, 'days')} · ${tr(context, 'Day')} $dayNumber';
+      }
+      return '$total ${tr(context, 'days')}';
+    } catch (_) {
+      return tr(context, 'Multi-day');
+    }
+  }
+
+  Widget _badge(
+      BuildContext context, IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

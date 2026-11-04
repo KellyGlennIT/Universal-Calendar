@@ -28,6 +28,9 @@ class CalendarProvider extends ChangeNotifier {
   int _sunriseHour = 6;
   String _defaultReminderSound = 'default';
 
+  // ── Auto-cleanup ───────────────────────────────────────────────────
+  int? _autoCleanupDays;
+
   List<CalendarModel> get calendars => _calendars;
   List<CalendarEvent> get events => _events;
   String get selectedCalendarId => _selectedCalendarId;
@@ -45,6 +48,9 @@ class CalendarProvider extends ChangeNotifier {
   int get sunriseHour => _sunriseHour;
   String get defaultReminderSound => _defaultReminderSound;
 
+  // ── Auto-cleanup getter ────────────────────────────────────────────
+  int? get autoCleanupDays => _autoCleanupDays;
+
   CalendarModel? get selectedCalendar {
     for (final c in _calendars) {
       if (c.id == _selectedCalendarId) return c;
@@ -52,22 +58,50 @@ class CalendarProvider extends ChangeNotifier {
     return _calendars.isNotEmpty ? _calendars.first : null;
   }
 
+  // ── Multi-day aware: events covering the currently selected date ───
   List<CalendarEvent> get eventsForSelectedDate {
-    final dateStr = CalendarMath.formatDate(_selectedDate, 'YYYY-MM-DD');
-    return _events
-        .where((e) => e.date == dateStr && e.calendarId == _selectedCalendarId)
-        .toList();
+    final day = DateTime(
+        _selectedDate.year, _selectedDate.month, _selectedDate.day);
+    return _events.where((e) {
+      if (_selectedCalendarId.isNotEmpty &&
+          e.calendarId != _selectedCalendarId) {
+        return false;
+      }
+      return _spansDay(e, day);
+    }).toList()
+      ..sort((a, b) => a.time.compareTo(b.time));
   }
 
+  // ── Multi-day aware: events covering any given date ────────────────
   List<CalendarEvent> eventsForDate(DateTime date) {
-    final dateStr = CalendarMath.formatDate(date, 'YYYY-MM-DD');
-    return _events
-        .where((e) =>
-            e.date == dateStr &&
-            (_selectedCalendarId.isEmpty ||
-                e.calendarId == _selectedCalendarId))
-        .toList()
+    final day = DateTime(date.year, date.month, date.day);
+    return _events.where((e) {
+      if (_selectedCalendarId.isNotEmpty &&
+          e.calendarId != _selectedCalendarId) {
+        return false;
+      }
+      return _spansDay(e, day);
+    }).toList()
       ..sort((a, b) => a.time.compareTo(b.time));
+  }
+
+  /// True if [e]'s span (date..endDate) includes [day].
+  /// Returns false on unparsable data — never throws.
+  bool _spansDay(CalendarEvent e, DateTime day) {
+    try {
+      final startParts = e.date.split('-').map(int.parse).toList();
+      if (startParts.length != 3) return false;
+      final start =
+          DateTime(startParts[0], startParts[1], startParts[2]);
+      final endStr =
+          (e.endDate == null || e.endDate!.isEmpty) ? e.date : e.endDate!;
+      final endParts = endStr.split('-').map(int.parse).toList();
+      if (endParts.length != 3) return false;
+      final end = DateTime(endParts[0], endParts[1], endParts[2]);
+      return !day.isBefore(start) && !day.isAfter(end);
+    } catch (_) {
+      return false;
+    }
   }
 
   List<CalendarEvent> eventsForCalendar(String calendarId) =>
@@ -113,6 +147,8 @@ class CalendarProvider extends ChangeNotifier {
       _sunriseHour = prefs.getInt('sunrise_hour') ?? 6;
       _defaultReminderSound =
           prefs.getString('default_reminder_sound') ?? 'default';
+      // ── Auto-cleanup setting ──
+      _autoCleanupDays = prefs.getInt('auto_cleanup_days');
       if (_primaryCalendarId.isNotEmpty &&
           _calendars.any((c) => c.id == _primaryCalendarId)) {
         _selectedCalendarId = _primaryCalendarId;
@@ -132,6 +168,11 @@ class CalendarProvider extends ChangeNotifier {
     }
     _isLoading = false;
     notifyListeners();
+
+    // ── Run auto-cleanup once on startup (fire-and-forget) ──
+    if (_autoCleanupDays != null) {
+      unawaited(runAutoCleanupIfEnabled());
+    }
   }
 
   /// One-time migration: Gregorian calendars used to start the week on
@@ -301,6 +342,12 @@ class CalendarProvider extends ChangeNotifier {
       await prefs.setBool('show_day_night', _showDayNight);
       await prefs.setInt('sunrise_hour', _sunriseHour);
       await prefs.setString('default_reminder_sound', _defaultReminderSound);
+      // ── Auto-cleanup setting ──
+      if (_autoCleanupDays == null) {
+        await prefs.remove('auto_cleanup_days');
+      } else {
+        await prefs.setInt('auto_cleanup_days', _autoCleanupDays!);
+      }
     } catch (e) {
       debugPrint('Save error: $e');
     }
@@ -506,6 +553,58 @@ class CalendarProvider extends ChangeNotifier {
     }
   }
 
+  // ── Auto-cleanup of old events ───────────────────────────────────────
+
+  /// Deletes every event whose final day (endDate or date) is strictly
+  /// earlier than [days] before today. Returns the number of events removed.
+  ///
+  /// Cancels any pending notifications for removed events.
+  Future<int> deleteEventsOlderThan(int days) async {
+    final cutoff = DateTime.now().subtract(Duration(days: days));
+    final cutoffStr = '${cutoff.year.toString().padLeft(4, '0')}-'
+        '${cutoff.month.toString().padLeft(2, '0')}-'
+        '${cutoff.day.toString().padLeft(2, '0')}';
+
+    final toRemove = _events.where((e) {
+      final endStr =
+          (e.endDate == null || e.endDate!.isEmpty) ? e.date : e.endDate!;
+      return endStr.compareTo(cutoffStr) < 0;
+    }).toList();
+
+    if (toRemove.isEmpty) return 0;
+
+    final ids = toRemove.map((e) => e.id).toSet();
+    _events.removeWhere((e) => ids.contains(e.id));
+
+    for (final id in ids) {
+      try {
+        await CalendarNotificationService.cancelEvent(id);
+      } catch (_) {}
+    }
+
+    await _saveData();
+    notifyListeners();
+    return toRemove.length;
+  }
+
+  /// Sets the auto-cleanup threshold (in days). Pass `null` for "Never".
+  /// If a non-null value is passed, immediately runs cleanup once.
+  Future<void> setAutoCleanupDays(int? days) async {
+    _autoCleanupDays = days;
+    await _saveData();
+    notifyListeners();
+    if (days != null) {
+      await deleteEventsOlderThan(days);
+    }
+  }
+
+  /// Runs auto-cleanup using the saved setting. Called once on startup
+  /// when an auto-cleanup value is stored. Safe to call any time.
+  Future<void> runAutoCleanupIfEnabled() async {
+    if (_autoCleanupDays == null) return;
+    await deleteEventsOlderThan(_autoCleanupDays!);
+  }
+
   // ── Settings ─────────────────────────────────────────────────────────
 
   Future<void> setPrimaryCalendar(String id) async {
@@ -584,6 +683,7 @@ class CalendarProvider extends ChangeNotifier {
           'show_day_night': _showDayNight,
           'sunrise_hour': _sunriseHour,
           'default_reminder_sound': _defaultReminderSound,
+          'auto_cleanup_days': _autoCleanupDays,
         },
       };
 
@@ -621,6 +721,7 @@ class CalendarProvider extends ChangeNotifier {
       _sunriseHour = (settingsMap['sunrise_hour'] as int?) ?? 6;
       _defaultReminderSound =
           (settingsMap['default_reminder_sound'] as String?) ?? 'default';
+      _autoCleanupDays = settingsMap['auto_cleanup_days'] as int?;
 
       if (_primaryCalendarId.isEmpty ||
           !_calendars.any((c) => c.id == _primaryCalendarId)) {

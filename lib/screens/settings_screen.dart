@@ -18,11 +18,6 @@ class SettingsScreen extends StatelessWidget {
     context.watch<LocaleProvider>();
     final provider = Provider.of<CalendarProvider>(context);
 
-    // ── Duplicate detection for the "Add a calendar" section ─────────────
-    // A preset counts as "already added" when a calendar with the same
-    // display name exists. Presets always ship with unique names, so this
-    // catches the duplicate case reliably and stays out of the way for
-    // calendars the user created manually.
     final addedNames = provider.calendars.map((c) => c.name).toSet();
     final addedPresetCount = calendarPresets.values
         .where((p) => addedNames.contains(p.name))
@@ -100,7 +95,8 @@ class SettingsScreen extends StatelessWidget {
               onChanged: (value) => provider.setSecondaryCalendar(value),
             ),
           ),
-          // ── Add a calendar (advanced) ───────────────────────────────
+
+          // ── Add a calendar ────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.only(top: 16, bottom: 8),
             child: Row(
@@ -152,41 +148,31 @@ class SettingsScreen extends StatelessWidget {
                   if (calendarPresets.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        tr(context, 'No preset calendars available.'),
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: Colors.grey),
-                      ),
+                      child: Text(tr(context, 'No preset calendars available.'),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: Colors.grey)),
                     )
                   else
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children:
-                          calendarPresets.entries.map((entry) {
+                      children: calendarPresets.entries.map((entry) {
                         final preset = entry.value;
                         final color = _hexToColor(preset.colorHex);
-                        final isAdded =
-                            addedNames.contains(preset.name);
+                        final isAdded = addedNames.contains(preset.name);
                         return FilterChip(
                           avatar: isAdded
-                              ? Icon(
-                                  Icons.check_circle,
-                                  size: 16,
-                                  color: color,
-                                )
-                              : Text(
-                                  preset.emoji,
-                                  style: const TextStyle(fontSize: 14),
-                                ),
+                              ? Icon(Icons.check_circle,
+                                  size: 16, color: color)
+                              : Text(preset.emoji,
+                                  style: const TextStyle(fontSize: 14)),
                           label: Text(
                             preset.name,
                             style: TextStyle(
                               fontSize: 12,
-                              color:
-                                  isAdded ? Colors.grey : color,
+                              color: isAdded ? Colors.grey : color,
                               fontWeight: isAdded
                                   ? FontWeight.w500
                                   : FontWeight.w600,
@@ -194,8 +180,7 @@ class SettingsScreen extends StatelessWidget {
                           ),
                           selected: isAdded,
                           showCheckmark: false,
-                          backgroundColor:
-                              color.withValues(alpha: 0.10),
+                          backgroundColor: color.withValues(alpha: 0.10),
                           selectedColor:
                               Colors.grey.withValues(alpha: 0.15),
                           side: BorderSide(
@@ -206,42 +191,29 @@ class SettingsScreen extends StatelessWidget {
                           ),
                           onSelected: (_) {
                             if (isAdded) {
-                              // Duplicate guard — tell the user why
-                              // nothing happened instead of silently
-                              // ignoring the tap.
                               ScaffoldMessenger.of(context)
                                   .hideCurrentSnackBar();
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(
+                              ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    '${preset.name} — '
-                                    '${tr(context, 'already added')}',
-                                  ),
-                                  duration:
-                                      const Duration(seconds: 2),
-                                  behavior:
-                                      SnackBarBehavior.floating,
+                                      '${preset.name} — ${tr(context, 'already added')}'),
+                                  duration: const Duration(seconds: 2),
+                                  behavior: SnackBarBehavior.floating,
                                 ),
                               );
                               return;
                             }
-                            final cal = provider
-                                .addPresetCalendar(entry.key);
+                            final cal =
+                                provider.addPresetCalendar(entry.key);
                             if (cal != null && context.mounted) {
                               ScaffoldMessenger.of(context)
                                   .hideCurrentSnackBar();
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(
+                              ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    '${tr(context, 'Added')} '
-                                    '${cal.name}',
-                                  ),
-                                  duration:
-                                      const Duration(seconds: 2),
-                                  behavior:
-                                      SnackBarBehavior.floating,
+                                      '${tr(context, 'Added')} ${cal.name}'),
+                                  duration: const Duration(seconds: 2),
+                                  behavior: SnackBarBehavior.floating,
                                 ),
                               );
                             }
@@ -252,21 +224,18 @@ class SettingsScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   const Divider(height: 1),
                   const SizedBox(height: 4),
-                  // ── Create custom calendar ───────────────────────
                   InkWell(
                     borderRadius: BorderRadius.circular(10),
-                    onTap: () => Navigator.pushNamed(
-                        context, '/create_calendar'),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/create_calendar'),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           vertical: 10, horizontal: 4),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.add_circle_outline,
-                            color: Theme.of(context).primaryColor,
-                            size: 20,
-                          ),
+                          Icon(Icons.add_circle_outline,
+                              color: Theme.of(context).primaryColor,
+                              size: 20),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
@@ -279,8 +248,8 @@ class SettingsScreen extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: Theme.of(context)
-                                        .primaryColor,
+                                    color:
+                                        Theme.of(context).primaryColor,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -294,11 +263,9 @@ class SettingsScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Theme.of(context).primaryColor,
-                            size: 20,
-                          ),
+                          Icon(Icons.chevron_right,
+                              color: Theme.of(context).primaryColor,
+                              size: 20),
                         ],
                       ),
                     ),
@@ -307,7 +274,8 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
-          // ── End add-calendar section ────────────────────────────────
+
+          // ── Time & Date ───────────────────────────────────────────────
           _section(context, tr(context, 'Time & Date')),
           _card(
             context,
@@ -362,6 +330,8 @@ class SettingsScreen extends StatelessWidget {
             value: provider.showDayNight,
             onChanged: provider.setShowDayNight,
           ),
+
+          // ── Notifications ─────────────────────────────────────────────
           _section(context, tr(context, 'Notifications')),
           _card(
             context,
@@ -407,6 +377,121 @@ class SettingsScreen extends StatelessWidget {
               }
             },
           ),
+
+          // ── Storage / cleanup ─────────────────────────────────────────
+          _section(context, tr(context, 'Storage')),
+          Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.auto_delete_outlined,
+                          color: Theme.of(context).primaryColor),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          tr(context, 'Auto-delete old events'),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    tr(context,
+                        'Automatically remove events that ended more than the selected period ago. Keeps your calendar clean without manual deleting.'),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.4,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int?>(
+                    key: ValueKey(
+                        'cleanup_${provider.autoCleanupDays ?? 'never'}'),
+                    initialValue: provider.autoCleanupDays,
+                    decoration: InputDecoration(
+                      labelText: tr(context, 'Delete after'),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                          value: null,
+                          child: Text(tr(context, 'Never'))),
+                      DropdownMenuItem(
+                          value: 30,
+                          child: Text(tr(context, '30 days'))),
+                      DropdownMenuItem(
+                          value: 60,
+                          child: Text(tr(context, '60 days'))),
+                      DropdownMenuItem(
+                          value: 90,
+                          child: Text(tr(context, '90 days'))),
+                      DropdownMenuItem(
+                          value: 180,
+                          child: Text(tr(context, '180 days'))),
+                      DropdownMenuItem(
+                          value: 365,
+                          child: Text(tr(context, '1 year'))),
+                    ],
+                    onChanged: (v) async {
+                      await provider.setAutoCleanupDays(v);
+                      if (!context.mounted) return;
+                      final count = v == null
+                          ? 0
+                          : await provider.deleteEventsOlderThan(v);
+                      if (!context.mounted) return;
+                      if (v != null && count > 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                '$count ${tr(context, count == 1 ? 'event removed' : 'events removed')}'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _card(
+            context,
+            icon: Icons.delete_sweep_outlined,
+            title: tr(context, 'Delete old events now'),
+            subtitle: tr(context,
+                'Runs the cleanup immediately with the current setting'),
+            onTap: () async {
+              final days = provider.autoCleanupDays;
+              if (days == null) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(tr(context,
+                      'Set an auto-delete period first, or choose Never to keep all events.')),
+                ));
+                return;
+              }
+              final count = await provider.deleteEventsOlderThan(days);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(count == 0
+                    ? tr(context, 'Nothing to clean up')
+                    : '$count ${tr(context, count == 1 ? 'event removed' : 'events removed')}'),
+                behavior: SnackBarBehavior.floating,
+              ));
+            },
+          ),
+
+          // ── Experience ────────────────────────────────────────────────
           _section(context, tr(context, 'Experience')),
           _card(
             context,
@@ -428,13 +513,15 @@ class SettingsScreen extends StatelessWidget {
                 .findAncestorStateOfType<MainScaffoldState>()
                 ?.showFirstUseTour(force: true),
           ),
+
+          // ── Data ──────────────────────────────────────────────────────
           _section(context, tr(context, 'Data')),
           _card(
             context,
             icon: Icons.download_outlined,
             title: tr(context, 'Backup All Data'),
-            subtitle:
-                tr(context, 'Copy a full JSON backup to the clipboard'),
+            subtitle: tr(context,
+                'Copy a full JSON backup to the clipboard'),
             onTap: () async {
               final payload = provider.getBackupPayload();
               final text =
@@ -442,7 +529,8 @@ class SettingsScreen extends StatelessWidget {
               await Clipboard.setData(ClipboardData(text: text));
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(tr(context, 'Backup copied to clipboard')),
+                content:
+                    Text(tr(context, 'Backup copied to clipboard')),
                 duration: const Duration(seconds: 3),
               ));
             },

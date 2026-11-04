@@ -28,15 +28,11 @@ class _DayViewPageState extends State<DayViewPage> {
   static const int _stripWindow = 200;
   static const double _stripTileWidth = 62;
   static const double _stripPadding = 4;
-
-  // Timeline layout constants
   static const double _labelWidth = 68;
   static const double _spineWidth = 28;
   static const double _dotColumnTop = 14;
 
   final Map<String, DateFormat> _fmtCache = {};
-  final Map<String, List<CalendarEvent>> _eventsByDate = {};
-  String? _eventsFingerprint;
 
   @override
   void initState() {
@@ -61,14 +57,11 @@ class _DayViewPageState extends State<DayViewPage> {
 
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  String _dateKey(DateTime d) => CalendarMath.formatDate(d, 'YYYY-MM-DD');
-
   DateFormat _fmt(String pattern, String locale) {
     final key = '$pattern|$locale';
     return _fmtCache.putIfAbsent(key, () => DateFormat(pattern, locale));
   }
 
-  // ── Strip scroll math ────────────────────────────────────────────────
   static double _stripCentreOffset(DateTime date) {
     final today = _dateOnly(DateTime.now());
     return (_stripWindow + today.difference(date).inDays) * _stripTileWidth;
@@ -121,30 +114,6 @@ class _DayViewPageState extends State<DayViewPage> {
 
   void _shiftDay(int delta) => _jumpTo(_currentDate.add(Duration(days: delta)));
 
-  // ── Event cache ───────────────────────────────────────────────────────
-  String _fingerprint(CalendarProvider p) {
-    final evts = p.events;
-    if (evts.isEmpty) return 'empty|${p.selectedCalendarId}';
-    return '${evts.length}|${evts.first.id}|${evts.last.id}|${p.selectedCalendarId}';
-  }
-
-  List<CalendarEvent> _dayEvents(CalendarProvider provider, DateTime date) {
-    final fp = _fingerprint(provider);
-    if (_eventsFingerprint != fp) {
-      _eventsFingerprint = fp;
-      _eventsByDate.clear();
-      for (final event in provider.events) {
-        if (event.calendarId != provider.selectedCalendarId) continue;
-        _eventsByDate.putIfAbsent(event.date, () => []).add(event);
-      }
-      for (final list in _eventsByDate.values) {
-        list.sort((a, b) => a.time.compareTo(b.time));
-      }
-    }
-    return _eventsByDate[_dateKey(date)] ?? const <CalendarEvent>[];
-  }
-
-  // ── Build ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>().languageCode;
@@ -165,7 +134,7 @@ class _DayViewPageState extends State<DayViewPage> {
         _fmt('MMMM', locale).format(_currentDate);
     final yearNumber = (info['year'] as int?) ?? _currentDate.year;
 
-    final dayEvents = _dayEvents(provider, _currentDate);
+    final dayEvents = provider.eventsForDate(_currentDate);
     final allDayEvents = dayEvents.where((e) => e.isAllDay).toList();
     final timedEvents = dayEvents.where((e) => !e.isAllDay).toList();
     final specials = cal == null
@@ -247,7 +216,6 @@ class _DayViewPageState extends State<DayViewPage> {
     );
   }
 
-  // ── Hourly timeline (spine + dots + events) ──────────────────────────
   Widget _buildHourlyTimeline(
     BuildContext context,
     CalendarProvider provider,
@@ -295,14 +263,11 @@ class _DayViewPageState extends State<DayViewPage> {
       ));
     }
 
-    return SliverList(
-      delegate: SliverChildListDelegate(widgets),
-    );
+    return SliverList(delegate: SliverChildListDelegate(widgets));
   }
 
   List<_HourSlot> _hourSlotsFor(String format, int sunrise) {
     final slots = <_HourSlot>[];
-
     if (format == 'biblical') {
       for (int i = 0; i < 12; i++) {
         final h = (sunrise + i) % 24;
@@ -323,7 +288,6 @@ class _DayViewPageState extends State<DayViewPage> {
       }
       return slots;
     }
-
     for (int h = 0; h < 24; h++) {
       slots.add(_HourSlot(
         actualHour: h,
@@ -370,7 +334,6 @@ class _DayViewPageState extends State<DayViewPage> {
             : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.4) ??
                 Colors.grey);
 
-    // Build spine segments — start at first dot, end at last dot
     Widget spineSegment;
     if (isFirst && isLast) {
       spineSegment = const SizedBox.shrink();
@@ -403,7 +366,6 @@ class _DayViewPageState extends State<DayViewPage> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Hour label ──
             Container(
               width: _labelWidth,
               padding: const EdgeInsets.only(top: 10, right: 10),
@@ -421,8 +383,8 @@ class _DayViewPageState extends State<DayViewPage> {
                           isCurrent ? FontWeight.w800 : FontWeight.w600,
                       color: isCurrent
                           ? accent
-                          : theme.textTheme.bodyLarge?.color?.withValues(
-                              alpha: hasEvents ? 1.0 : 0.55),
+                          : theme.textTheme.bodyLarge?.color
+                              ?.withValues(alpha: hasEvents ? 1.0 : 0.55),
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -441,7 +403,6 @@ class _DayViewPageState extends State<DayViewPage> {
                 ],
               ),
             ),
-            // ── Dot column ──
             SizedBox(
               width: _spineWidth,
               child: Padding(
@@ -456,7 +417,6 @@ class _DayViewPageState extends State<DayViewPage> {
                 ),
               ),
             ),
-            // ── Events / spacer ──
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(left: 6, bottom: 4),
@@ -466,8 +426,8 @@ class _DayViewPageState extends State<DayViewPage> {
                         children: [
                           if (isCurrent)
                             Padding(
-                              padding:
-                                  const EdgeInsets.only(top: 2, bottom: 4),
+                              padding: const EdgeInsets.only(
+                                  top: 2, bottom: 4),
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: _nowPill(context, accent),
@@ -530,10 +490,7 @@ class _DayViewPageState extends State<DayViewPage> {
       return Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-        ),
+        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
       );
     }
     return Container(
@@ -560,10 +517,7 @@ class _DayViewPageState extends State<DayViewPage> {
           Container(
             width: 5,
             height: 5,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: accent,
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: accent),
           ),
           const SizedBox(width: 5),
           Text(
@@ -597,8 +551,7 @@ class _DayViewPageState extends State<DayViewPage> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                tr(context,
-                    'A free day. Add an event to make it count.'),
+                tr(context, 'A free day. Add an event to make it count.'),
                 style: TextStyle(
                   fontSize: 12,
                   color: theme.textTheme.bodySmall?.color,
@@ -611,7 +564,6 @@ class _DayViewPageState extends State<DayViewPage> {
     );
   }
 
-  // ── Hero header ──────────────────────────────────────────────────────
   Widget _hero({
     required BuildContext context,
     required Color accent,
@@ -845,7 +797,6 @@ class _DayViewPageState extends State<DayViewPage> {
         ),
       );
 
-  // ── Day strip ────────────────────────────────────────────────────────
   Widget _dayStrip(BuildContext context, String locale, Color accent) {
     final today = _dateOnly(DateTime.now());
 
@@ -941,7 +892,6 @@ class _DayViewPageState extends State<DayViewPage> {
         ),
       );
 
-  // ── All day ──────────────────────────────────────────────────────────
   Widget _allDaySection(
       BuildContext context, List<CalendarEvent> events, Color accent) {
     return Padding(
@@ -992,7 +942,6 @@ class _DayViewPageState extends State<DayViewPage> {
     );
   }
 
-  // ── Event card ───────────────────────────────────────────────────────
   Widget _timelineEventCard(
     BuildContext context,
     CalendarProvider provider,
@@ -1009,6 +958,24 @@ class _DayViewPageState extends State<DayViewPage> {
     final end = _formatTime(_endTime(event), format, showSeconds, sunrise);
     final native =
         _formatTime(event.time, cal?.timeFormat ?? '24h', false, sunrise);
+
+    // Multi-day badge
+    String? multiDayLabel;
+    if (event.isMultiDay) {
+      try {
+        final startDate = CalendarMath.parseDate(event.date, 'YYYY-MM-DD');
+        final endDate =
+            CalendarMath.parseDate(event.endDate!, 'YYYY-MM-DD');
+        final totalDays =
+            endDate.difference(startDate).inDays + 1;
+        final dayIndex =
+            _currentDate.difference(startDate).inDays + 1;
+        if (dayIndex >= 1 && dayIndex <= totalDays) {
+          multiDayLabel =
+              '${tr(context, 'Day')} $dayIndex ${tr(context, 'of')} $totalDays';
+        }
+      } catch (_) {}
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -1056,15 +1023,48 @@ class _DayViewPageState extends State<DayViewPage> {
                   ],
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  '$start — $end',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: accent,
-                  ),
+                Row(
+                  children: [
+                    if (multiDayLabel != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: event.color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.date_range,
+                                size: 10, color: event.color),
+                            const SizedBox(width: 3),
+                            Text(
+                              multiDayLabel,
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: event.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: Text(
+                        '$start — $end',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: accent,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 if (cal != null && cal.timeFormat != format)
                   Text(
@@ -1098,7 +1098,6 @@ class _DayViewPageState extends State<DayViewPage> {
     );
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────
   Color _hexColor(String hex) {
     try {
       final cleaned = hex.replaceFirst('#', '');

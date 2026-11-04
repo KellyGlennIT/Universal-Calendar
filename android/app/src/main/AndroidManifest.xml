@@ -1,40 +1,26 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- ============ NOTIFICATIONS ============ -->
+    <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
 
-    <!-- ============ EXACT-TIME ALARMS (prayer times) ============ -->
-    <!-- SCHEDULE_EXACT_ALARM: Android 12/13 (user must grant in settings) -->
-    <!-- USE_EXACT_ALARM: Android 14+ (auto-granted — you qualify as a calendar app) -->
+    <!-- Exact-time alarms (prayer / event reminders) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
 
-    <!-- ============ WAKE DEVICE + SHOW OVER LOCK SCREEN ============ -->
-    <!-- Required so prayer alarms actually wake the device reliably -->
+    <!-- Wake device for exact alarms -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <!-- Required so prayer alarms appear full-screen over the lock screen -->
+
+    <!-- Optional per-event alarm-style popups (Android 14+ asks the user) -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
 
-    <!-- ============ SURVIVE REBOOT ============ -->
+    <!-- Reschedule reminders after reboot / update -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-
-    <!-- ============ PRAYER TIMER (runs while app is backgrounded) ============ -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
-
-    <!-- ============ OPTIONAL: MICROPHONE ============ -->
-    <!-- Uncomment ONLY when you add voice notes / speech-to-text -->
-    <!--
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
-    -->
 
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
-        android:enableOnBackInvokedCallback="true">
+        android:icon="@mipmap/ic_launcher">
 
         <meta-data
             android:name="flutterEmbedding"
@@ -58,7 +44,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Reschedules all pending notifications after device reboot or app update -->
         <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
             android:exported="false">
             <intent-filter>
@@ -69,7 +54,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- Fires the scheduled notification at the alarm time -->
         <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
             android:exported="false"/>
 

@@ -141,11 +141,9 @@ class _BottomBar extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () => provider.goToToday(),
               icon: const Icon(Icons.today_rounded, size: 18),
-              label: Text(
-                tr(context, 'Today'),
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.bold),
-              ),
+              label: Text(tr(context, 'Today'),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.bold)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Theme.of(context).primaryColor,
                 side: BorderSide(
@@ -166,11 +164,9 @@ class _BottomBar extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const AddEventPage()),
               ),
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text(
-                tr(context, 'Add event'),
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.bold),
-              ),
+              label: Text(tr(context, 'Add event'),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
@@ -197,8 +193,8 @@ class _CalendarSelector extends StatelessWidget {
         if (provider.calendars.isEmpty) {
           return Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(
-                tr(context, 'No calendars. Create one from the drawer.')),
+            child: Text(tr(context,
+                'No calendars. Create one from the drawer.')),
           );
         }
         final selected = provider.selectedCalendar;
@@ -277,11 +273,9 @@ class _CalendarSelector extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  tr(context, 'Select Calendar'),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                Text(tr(context, 'Select Calendar'),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
@@ -289,17 +283,16 @@ class _CalendarSelector extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 4),
-            Text(
-              tr(context, 'Choose which calendar to display'),
-              style: const TextStyle(fontSize: 13, color: Colors.grey),
-            ),
+            Text(tr(context, 'Choose which calendar to display'),
+                style:
+                    const TextStyle(fontSize: 13, color: Colors.grey)),
             const Divider(),
             ...provider.calendars.map((cal) {
               final isSelected = cal.id == provider.selectedCalendarId;
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor:
-                      cal.color.withValues(alpha: isSelected ? 1.0 : 0.20),
+                  backgroundColor: cal.color
+                      .withValues(alpha: isSelected ? 1.0 : 0.20),
                   child: Text(cal.emoji,
                       style: const TextStyle(fontSize: 16)),
                 ),
@@ -322,11 +315,9 @@ class _CalendarSelector extends StatelessWidget {
                           color: cal.color.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          tr(context, 'Active'),
-                          style:
-                              TextStyle(fontSize: 11, color: cal.color),
-                        ),
+                        child: Text(tr(context, 'Active'),
+                            style: TextStyle(
+                                fontSize: 11, color: cal.color)),
                       )
                     : null,
                 onTap: () {
@@ -491,8 +482,10 @@ class _MonthPickerHeader extends StatelessWidget {
                           height: 3,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color:
-                                Theme.of(context).textTheme.bodySmall?.color,
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.color,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -500,8 +493,10 @@ class _MonthPickerHeader extends StatelessWidget {
                           '${tr(context, 'Month')} ${provider.currentMonth} ${tr(context, 'of')} $totalMonths',
                           style: TextStyle(
                             fontSize: 11,
-                            color:
-                                Theme.of(context).textTheme.bodySmall?.color,
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.color,
                           ),
                         ),
                       ],
@@ -792,16 +787,14 @@ class _WeekCalendarView extends StatelessWidget {
                               ? Padding(
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 10),
-                                  child: Text(
-                                    tr(context, 'No events'),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.color,
-                                    ),
-                                  ),
+                                  child: Text(tr(context, 'No events'),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.color,
+                                      )),
                                 )
                               : Column(
                                   crossAxisAlignment:
@@ -843,10 +836,13 @@ class _WeekCalendarView extends StatelessWidget {
                                                     ),
                                                   ),
                                                   Text(
-                                                    event.isAllDay
+                                                    event.isMultiDay
                                                         ? tr(context,
-                                                            'All day')
-                                                        : '${event.time}–${formatEventEnd(event)}',
+                                                            'Multi-day')
+                                                        : event.isAllDay
+                                                            ? tr(context,
+                                                                'All day')
+                                                            : '${event.time}–${formatEventEnd(event)}',
                                                     style: TextStyle(
                                                       fontSize: 10,
                                                       color: Theme.of(
@@ -965,11 +961,44 @@ class _CalendarGrid extends StatelessWidget {
           );
         }).toList();
 
+        // Index events by their start-date string AND by every spanned date,
+        // so multi-day events show up on every day they cover.
         final eventsByCalendarAndDate = <String, Set<String>>{};
+        final multiDayByCalendarAndDate = <String, _MultiDayMark>{};
         for (final e in provider.events) {
-          eventsByCalendarAndDate
-              .putIfAbsent(e.calendarId, () => <String>{})
-              .add(e.date);
+          try {
+            final startParts = e.date.split('-').map(int.parse).toList();
+            if (startParts.length != 3) continue;
+            final start =
+                DateTime(startParts[0], startParts[1], startParts[2]);
+            final endStr =
+                (e.endDate == null || e.endDate!.isEmpty) ? e.date : e.endDate!;
+            final endParts = endStr.split('-').map(int.parse).toList();
+            if (endParts.length != 3) continue;
+            final end = DateTime(endParts[0], endParts[1], endParts[2]);
+
+            for (var d = start;
+                !d.isAfter(end);
+                d = d.add(const Duration(days: 1))) {
+              final key = CalendarMath.formatDate(d, 'YYYY-MM-DD');
+              eventsByCalendarAndDate
+                  .putIfAbsent(e.calendarId, () => <String>{})
+                  .add(key);
+
+              if (e.isMultiDay) {
+                final markKey = '${e.calendarId}|$key';
+                final isStart = d == start;
+                final isEnd = d == end;
+                final color = e.color;
+                final existing = multiDayByCalendarAndDate[markKey];
+                multiDayByCalendarAndDate[markKey] = _MultiDayMark(
+                  isStart: isStart || (existing?.isStart ?? false),
+                  isEnd: isEnd || (existing?.isEnd ?? false),
+                  color: existing?.color ?? color,
+                );
+              }
+            }
+          } catch (_) {}
         }
 
         final specialDaysByDay = <int, List<dynamic>>{};
@@ -997,6 +1026,8 @@ class _CalendarGrid extends StatelessWidget {
           final dateStr = CalendarMath.formatDate(date, 'YYYY-MM-DD');
           final hasEvents =
               eventsByCalendarAndDate[cal.id]?.contains(dateStr) ?? false;
+          final multiMark =
+              multiDayByCalendarAndDate['${cal.id}|$dateStr'];
           final specialHere = specialDaysByDay[day];
           String? secondaryText;
           if (secondaryCal != null && secondaryCal.id != cal.id) {
@@ -1029,6 +1060,26 @@ class _CalendarGrid extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
+                  // Multi-day indicator bar at the top
+                  if (multiMark != null)
+                    Positioned(
+                      top: 4,
+                      left: multiMark.isStart && !multiMark.isEnd ? null : 8,
+                      right:
+                          multiMark.isEnd && !multiMark.isStart ? null : 8,
+                      child: Container(
+                        width: multiMark.isStart && !multiMark.isEnd
+                            ? 10
+                            : (multiMark.isEnd && !multiMark.isStart
+                                ? 10
+                                : null),
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.white : multiMark.color,
+                          borderRadius: BorderRadius.circular(1.5),
+                        ),
+                      ),
+                    ),
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
@@ -1075,7 +1126,7 @@ class _CalendarGrid extends StatelessWidget {
                         ),
                     ],
                   ),
-                  if (hasEvents)
+                  if (hasEvents && multiMark == null)
                     Positioned(
                       bottom: 2,
                       child: Container(
@@ -1155,11 +1206,7 @@ class _CalendarGrid extends StatelessWidget {
   void _showDateOptions(
       BuildContext context, DateTime date, CalendarProvider provider) {
     final dateStr = CalendarMath.formatDate(date, 'YYYY-MM-DD');
-    final eventsForDate = provider.events
-        .where((e) =>
-            e.date == dateStr &&
-            e.calendarId == provider.selectedCalendarId)
-        .toList();
+    final eventsForDate = provider.eventsForDate(date);
 
     showModalBottomSheet(
       context: context,
@@ -1210,11 +1257,9 @@ class _CalendarGrid extends StatelessWidget {
               if (eventsForDate.isNotEmpty) {
                 _showEventsList(context, eventsForDate);
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content:
-                          Text(tr(context, 'No events on this date'))),
-                );
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(tr(context, 'No events on this date')),
+                ));
               }
             }),
             _tile(context, Icons.swap_horiz,
@@ -1348,4 +1393,16 @@ class _CalendarGrid extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Internal marker describing how a multi-day event spans a specific cell.
+class _MultiDayMark {
+  final bool isStart;
+  final bool isEnd;
+  final Color color;
+  const _MultiDayMark({
+    required this.isStart,
+    required this.isEnd,
+    required this.color,
+  });
 }
