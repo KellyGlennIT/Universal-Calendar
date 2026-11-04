@@ -3,7 +3,7 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.5-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-%3E%3D3.4.0%20%3C4.0.0-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![Analyze](https://img.shields.io/badge/flutter_analyze-clean-brightgreen)](#verification-status)
-[![Tests](https://img.shields.io/badge/flutter_test-28%2F28%20passing-brightgreen)](#verification-status)
+[![Tests](https://img.shields.io/badge/flutter_test-62%2F62%20passing-brightgreen)](#verification-status)
 [![License](https://img.shields.io/badge/license-TBD-lightgrey)](#license)
 
 **Universal Calendar** is a Flutter calendar workspace built around *user-defined calendar systems* rather than a Gregorian-only model. It ships with Gregorian, Ethiopian and Biblical (Hebrew) calendars, lets users create entirely custom calendar structures, and layers a full scheduling suite on top — events, reminders, dual-calendar comparison, date tooling, PDF export and Christian devotional tools — in English and French.
@@ -27,6 +27,7 @@
 - [Getting started](#getting-started)
 - [Build for release](#build-for-release)
 - [Testing](#testing)
+- [Day view performance](#day-view-performance)
 - [Data storage and privacy](#data-storage-and-privacy)
 - [Recent changes](#recent-changes)
 - [Verification status](#verification-status)
@@ -54,6 +55,7 @@ This makes it suitable for liturgical planning, cultural/religious calendar obse
 - **Presets included:** Gregorian, Ethiopian, Biblical (Hebrew) — plus a blank custom template.
 - **Step-by-step creator** for building a calendar: naming, color/emoji selection, month structure, weekday structure, year-start, leap rules and display formats (24h/12h, date format, timezone).
 - **Full editing workflow** for existing calendars, including special-day management.
+- **Year offset with a live preview** — the offset can be stepped (long-press steps by 100) or typed directly, and a preview shows the resulting year for three sample dates *before* saving.
 - Independent month lengths and names; custom weekday names and week lengths; configurable year start, year numbering and leap-year rules.
 - **Dual-calendar comparison** — see how a date in one calendar maps to another, side by side.
 - **Offset calculator** — count days between dates across differing calendar structures.
@@ -63,10 +65,12 @@ This makes it suitable for liturgical planning, cultural/religious calendar obse
 
 - **Month, Week and Agenda** modes.
 - Month mode supports horizontal swiping with a soft animated transition.
+- **Day view** is built on a single `CustomScrollView` (one scrollable, no nested scroll views): a gradient hero, a pinned day strip and a lazily-built agenda. See [Day view performance](#day-view-performance).
 - The month header shows its **number within the active calendar** (e.g. *Month 03 of 12*) above the month name — this respects the active calendar, not a fixed Gregorian index.
 - Week mode uses the selected calendar's **configured week start and day-count (1–14 days)** rather than assuming a Monday-first Gregorian week.
 - Week mode swipes by one configured calendar week; Day mode swipes one day at a time.
-- **Day mode** contains a 24-hour timeline. Appointment cards show their start/end time, can be tapped to open details, and all-day appointments display separately above the timeline.
+- **Day mode** shows only the hours that actually hold appointments — a schedule list rather than an empty 24-hour grid. Appointment cards show their start/end time, can be tapped to open details, and all-day appointments display separately above the timeline.
+- The day strip is a lazily-built horizontal list that stays centred on the selected day: swiping the page, tapping *Today*, or tapping a chip scrolls the strip, and a fling snaps it back to the selection.
 
 ### Events and appointments
 
@@ -139,10 +143,18 @@ universal_calendar/
 │   ├── services/                     # Notifications, PDF export, ICS/CSV export
 │   ├── theme/                        # App-wide Material 3 theme
 │   ├── utils/                        # Calendar math, presets, formatters, dialogs
+│   │   └── notification_sounds.dart  # Alert-tone catalogue + playback helpers
 │   └── l10n/                         # Localization (tr() helper, French strings)
+├── assets/
+│   ├── fonts/                        # Noto Sans Regular / Bold
+│   └── sounds/                       # Bundled notification tones (.wav)
 ├── test/
+│   ├── calendar_math_test.dart       # Date-engine reference cases (Julian, Hebrew, French…)
 │   ├── calendar_models_test.dart     # Models, calendars, provider, localization
+│   ├── pdf_render_test.dart          # PDF generation smoke test
 │   └── widget_test.dart              # Smoke test
+├── tools/
+│   └── generate_notification_tones.ps1  # Regenerates assets/sounds/*.wav
 ├── android/ · ios/ · linux/ · macos/ · web/ · windows/
 └── pubspec.yaml
 ```
@@ -160,7 +172,8 @@ universal_calendar/
 | Timezone | `flutter_timezone 4.1.1` + `timezone 0.10.1` |
 | UI / state | Material 3, `provider ^6.0.0`, `shared_preferences`, `intl 0.20.2` |
 | PDF | `pdf ^3.11.0` + `printing ^5.13.0` |
-| File saving | `path_provider ^2.1.0` |
+| File saving / sharing | `path_provider ^2.1.0`, `share_plus ^12.0.0` |
+| Bundled assets | Notification tones (`assets/sounds/*.wav`), Noto Sans font |
 | Compatibility pins | `image 4.5.4` + `archive 4.0.7` — see [Recent changes](#recent-changes) |
 
 ---
@@ -201,7 +214,7 @@ flutter analyze
 flutter test
 ```
 
-All **28 tests** currently pass.
+All **62 tests** currently pass.
 
 ### 5. Run the app
 
@@ -215,20 +228,43 @@ The app starts with a splash screen, then either the **first-launch language pic
 
 ## Build for release
 
-After the on-device runtime checks pass:
+The app targets **Android phones** first; desktop and web targets compile but the notification features are Android-specific.
 
 ```sh
-flutter build apk --release
+# Split per-ABI APKs are smaller to transfer and install by hand
+flutter build apk --release --split-per-abi
 ```
 
-The release APK is produced at `build/app/outputs/flutter-apk/app-release.apk`.
+The release APKs are produced in `build/app/outputs/flutter-apk/`:
+
+| File | Device |
+|---|---|
+| `app-arm64-v8a-release.apk` | Almost every phone from ~2017 onward — **use this one** |
+| `app-armeabi-v7a-release.apk` | Older 32-bit devices |
+| `app-x86_64-release.apk` | Emulators / x86 tablets |
+
+For a single universal APK instead, run `flutter build apk --release` (larger, works everywhere).
+
+To install on a connected phone:
+
+```sh
+adb install -r build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+```
+
+or copy the APK to the phone and open it (allow *Install unknown apps* for the file manager).
 
 ---
 
 ## Testing
 
-The test suite lives in `test/`:
+The test suite lives in `test/` (62 tests):
 
+- **`calendar_math_test.dart`** — covers:
+  - Rata Die epoch and round-trips.
+  - Julian/Gregorian conversion against reference tables (1582 reform, 13-day skew).
+  - Hebrew (Rosh Hashanah, Yom Kippur, Hanukkah, Pesach) with month numbering kept inside 1–13.
+  - French Republican epoch and Hijri month lengths.
+  - Week-start offsets and weekday headers for Gregorian, Sunday-first, Ethiopian and a renamed start (`Shabbat`).
 - **`calendar_models_test.dart`** — covers:
   - Event serialization, legacy migration and reminder/all-day/duration defaults.
   - Custom week structure (e.g. a 5-day week start offset).
@@ -239,6 +275,7 @@ The test suite lives in `test/`:
   - `CalendarProvider` defaults, reset-all-data and event lookup.
   - First-launch language-picker rendering (catches layout overflow regressions).
   - `tr()` localization lookups and fallback behavior.
+- **`pdf_render_test.dart`** — renders a PDF and checks it is produced.
 - **`widget_test.dart`** — basic smoke test.
 
 Run with `flutter test`. A clean run prints `All tests passed!`.
@@ -256,6 +293,18 @@ Run with `flutter test`. A clean run prints `All tests passed!`.
 
 ---
 
+## Day view performance
+
+The day view is tuned for mid-range phones:
+
+- **One scrollable.** The whole screen is a single `CustomScrollView` — hero, pinned day strip and agenda are slivers of it. There is no `SingleChildScrollView` wrapping a `ListView` (the classic nested-scroll jank pattern) and no `shrinkWrap` list inside a scroll view.
+- **Lazy agenda.** Rows are built by `SliverList.builder`, so only visible appointments exist as widgets. Hours without appointments are not rendered at all.
+- **Indexed lookups.** Events are bucketed by date once and reused until the event list or selected calendar changes, so changing days no longer re-scans the whole event store on every rebuild.
+- **Fixed-extent strip.** The day strip uses `itemExtent`, so Flutter never has to measure tiles while scrolling, and only the visible chips are built.
+- **Single locale subscription.** The screen watches `LocaleProvider` once (it previously subscribed twice, causing a redundant rebuild path).
+
+---
+
 ## Recent changes
 
 ### PDF export
@@ -264,6 +313,12 @@ Run with `flutter test`. A clean run prints `All tests passed!`.
 - The generated PDF is typeset directly from the selected calendar's own month names, weekday names, week length and month lengths — not from a Gregorian template.
 - Events and special days are drawn on the month grid (bold/special-colored day numbers) and listed below the grid, with a `+ N more events` overflow line.
 - The finished PDF is saved to the app's documents directory as `<CalendarName>_calendar.pdf`, with a confirmation snackbar showing the full path.
+
+### Day view and editing
+- **Day view rewritten** around one `CustomScrollView` with a gradient hero, a pinned day strip and a lazily-built agenda (see [Day view performance](#day-view-performance)).
+- **Day strip stays in sync** — swiping, *Today*, and chip taps all scroll the strip, and a fling snaps it back onto the selected day.
+- **Year offset is easier to set** — tap the number to type a value, or long-press the ± buttons to step by 100 (useful for the French Republican calendar at −1791). The live three-date preview updates immediately.
+- **Hebrew month numbering fixed** — month numbers now stay within 1–13 in leap years (Elul was reported as 14) and week headers line up with the grid for Sunday-first, Ethiopian and renamed week starts.
 
 ### Error fixes
 - **Missing `pdf_export_page.dart`** — the drawer referenced `PdfExportPage` but the file did not exist, so the project did not compile. The page has been created.
@@ -289,12 +344,13 @@ The following commands were run in this environment and are confirmed passing:
 |---|---|
 | `flutter pub get` | ✅ Dependencies resolve with the pinned `image 4.5.4` / `archive 4.0.7` pair. |
 | `flutter analyze` | ✅ **No issues found** — zero errors, warnings and infos. |
-| `flutter test` | ✅ **All 28 tests pass.** |
+| `flutter test` | ✅ **All 62 tests pass.** |
 
 **Not yet verified in this environment:**
 
 - A physical Android device run, real notification delivery, audible reminder behavior, reboot-receiver restoration and the exact-alarm permission flow require a device/emulator and were not exercised here.
 - An APK release build (`flutter build apk --release`) was not performed. Run it after the on-device checks pass.
+- Scroll smoothness was reviewed in code (single scrollable, lazy slivers, fixed-extent strip, indexed event lookup) but frame timings on a physical phone were not profiled here — use `flutter run --profile` and DevTools to confirm on your device.
 
 ---
 

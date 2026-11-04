@@ -30,21 +30,28 @@ const Map<String, String> frenchStrings = {
   // ── Notifications ───────────────────────────────────────────────────────
   'Notifications': 'Notifications',
   'Allow notifications': 'Autoriser les notifications',
-  'Request permission for audible calendar alerts': 'Autoriser les alertes sonores du calendrier',
+  'Request permission for audible calendar alerts':
+      'Autoriser les alertes sonores du calendrier',
   'Notification permission granted': 'Autorisation des notifications accordée',
-  'Notifications are disabled in system settings': 'Les notifications sont désactivées dans les paramètres du système',
+  'Notifications are disabled in system settings':
+      'Les notifications sont désactivées dans les paramètres du système',
   'Test notification sound': 'Tester le son des notifications',
-  'Send a test alert to verify delivery and sound': 'Envoyer une alerte de test pour vérifier la réception et le son',
-  'Enable notifications in Android settings first': 'Activez d’abord les notifications dans les paramètres Android',
-  'Reminder saved, but notifications are disabled. Enable them in Settings to receive it.': 'Rappel enregistré, mais les notifications sont désactivées. Activez-les dans les paramètres pour le recevoir.',
+  'Send a test alert to verify delivery and sound':
+      'Envoyer une alerte de test pour vérifier la réception et le son',
+  'Enable notifications in Android settings first':
+      'Activez d’abord les notifications dans les paramètres Android',
+  'Reminder saved, but notifications are disabled. Enable them in Settings to receive it.':
+      'Rappel enregistré, mais les notifications sont désactivées. Activez-les dans les paramètres pour le recevoir.',
 
   // ── General navigation ──────────────────────────────────────────────────
   'Experience': 'Expérience',
   'Replay app tour': 'Revoir la visite guidée',
-  'A quick guide to the main features': 'Présentation rapide des fonctions principales',
+  'A quick guide to the main features':
+      'Présentation rapide des fonctions principales',
   'Data': 'Données',
   'Reset All Data': 'Réinitialiser toutes les données',
-  'Delete all calendars and events': 'Supprimer tous les calendriers et événements',
+  'Delete all calendars and events':
+      'Supprimer tous les calendriers et événements',
   'About': 'À propos',
   'Close': 'Fermer',
   'Cancel': 'Annuler',
@@ -69,7 +76,8 @@ const Map<String, String> frenchStrings = {
   'Calculate result from start date': 'Calculer à partir de la date de début',
   'Apply offset to selected date': 'Appliquer le décalage à la date choisie',
   'Date copied': 'Date copiée',
-  'Calculate a calendar year offset': 'Calculer le décalage d’année du calendrier',
+  'Calculate a calendar year offset':
+      'Calculer le décalage d’année du calendrier',
   'Gregorian year': 'Année grégorienne',
   'Your calendar year': 'Année de votre calendrier',
   'Calculate year offset': 'Calculer le décalage d’année',
@@ -77,7 +85,8 @@ const Map<String, String> frenchStrings = {
 
   // ── Language ────────────────────────────────────────────────────────────
   'Language': 'Langue',
-  'Choose the language used throughout the app': 'Choisissez la langue utilisée dans l’application',
+  'Choose the language used throughout the app':
+      'Choisissez la langue utilisée dans l’application',
   'English': 'Anglais',
   'French': 'Français',
   'Reset': 'Réinitialiser',
@@ -115,13 +124,15 @@ const Map<String, String> frenchStrings = {
   '1 day before': '1 jour avant',
   'Day view': 'Vue journalière',
   'No events': 'Aucun événement',
-  'No upcoming events. Add an event to start your agenda.': 'Aucun événement à venir. Ajoutez un événement pour commencer votre agenda.',
+  'No upcoming events. Add an event to start your agenda.':
+      'Aucun événement à venir. Ajoutez un événement pour commencer votre agenda.',
   'Event starts in': 'L’événement commence dans',
   'minutes.': 'minutes.',
   'Your event is starting now.': 'Votre événement commence maintenant.',
   'Month of': 'Mois',
   'of': 'sur',
-  'Swipe left or right to change months': 'Balayez vers la gauche ou la droite pour changer de mois',
+  'Swipe left or right to change months':
+      'Balayez vers la gauche ou la droite pour changer de mois',
 
   // ── Event editing ───────────────────────────────────────────────────────
   'Event Title': 'Titre de l’événement',
@@ -142,8 +153,10 @@ const Map<String, String> frenchStrings = {
   'PM': 'PM',
   'Calendar alerts': 'Alertes du calendrier',
   'Notifications are working': 'Les notifications fonctionnent',
-  'Universal Calendar can play reminder sounds on this device.': 'Calendrier universel peut émettre des rappels sonores sur cet appareil.',
-  'Are you sure you want to delete all events on this date?': 'Voulez-vous vraiment supprimer tous les événements de cette date ?',
+  'Universal Calendar can play reminder sounds on this device.':
+      'Calendrier universel peut émettre des rappels sonores sur cet appareil.',
+  'Are you sure you want to delete all events on this date?':
+      'Voulez-vous vraiment supprimer tous les événements de cette date ?',
   'Delete All': 'Tout supprimer',
 
   // ── Calendar picker ─────────────────────────────────────────────────────
@@ -154,14 +167,17 @@ const Map<String, String> frenchStrings = {
   'No calendars yet': 'Aucun calendrier pour le moment',
   'Tap the + button to create one.': 'Appuyez sur + pour en créer un.',
   'Delete Calendar': 'Supprimer le calendrier',
-  'Are you sure you want to delete this calendar? All events will also be deleted.': 'Voulez-vous vraiment supprimer ce calendrier ? Tous ses événements seront également supprimés.',
+  'Are you sure you want to delete this calendar? All events will also be deleted.':
+      'Voulez-vous vraiment supprimer ce calendrier ? Tous ses événements seront également supprimés.',
   'Search Events': 'Rechercher des événements',
   'No events found': 'Aucun événement trouvé',
   'Apply an offset to another date': 'Appliquer un décalage à une autre date',
   'Date to adjust': 'Date à ajuster',
-  'Enter this value in the Year Offset field when creating your calendar.': 'Saisissez cette valeur dans le champ Décalage d’année lors de la création du calendrier.',
+  'Enter this value in the Year Offset field when creating your calendar.':
+      'Saisissez cette valeur dans le champ Décalage d’année lors de la création du calendrier.',
   'Date Equivalents': 'Équivalences de dates',
-  'Tap calendar icon to change date': 'Touchez l’icône du calendrier pour changer la date',
+  'Tap calendar icon to change date':
+      'Touchez l’icône du calendrier pour changer la date',
   'All Calendar Equivalents': 'Équivalences de tous les calendriers',
 
   // ── Biblical time ───────────────────────────────────────────────────────
@@ -169,15 +185,18 @@ const Map<String, String> frenchStrings = {
 
   // ── Create calendar wizard ──────────────────────────────────────────────
   'Choose a starting template': 'Choisir un modèle de départ',
-  'Select a predefined calendar structure or start from scratch.': 'Choisissez une structure prédéfinie ou partez de zéro.',
+  'Select a predefined calendar structure or start from scratch.':
+      'Choisissez une structure prédéfinie ou partez de zéro.',
   'Name your calendar': 'Nommer votre calendrier',
   'Year Structure': 'Structure de l’année',
   'No leap years': 'Aucune année bissextile',
   'Every 4 years': 'Tous les 4 ans',
-  'Gregorian (every 4 except century)': 'Grégorien (tous les 4 ans sauf les siècles)',
+  'Gregorian (every 4 except century)':
+      'Grégorien (tous les 4 ans sauf les siècles)',
   'Custom pattern': 'Règle personnalisée',
   'Months & Days': 'Mois et jours',
-  'Customize the names and lengths of every month. Drag to reorder.': 'Personnalisez les noms et la durée de chaque mois. Faites glisser pour réorganiser.',
+  'Customize the names and lengths of every month. Drag to reorder.':
+      'Personnalisez les noms et la durée de chaque mois. Faites glisser pour réorganiser.',
   'Weekday names': 'Noms des jours',
   'Add Month': 'Ajouter un mois',
   'Distribute evenly': 'Répartir uniformément',
@@ -214,41 +233,61 @@ const Map<String, String> frenchStrings = {
   'Save': 'Enregistrer',
   'Search': 'Rechercher',
   'Add Event': 'Ajouter un événement',
-  'You must keep at least one calendar.': 'Vous devez conserver au moins un calendrier.',
+  'You must keep at least one calendar.':
+      'Vous devez conserver au moins un calendrier.',
 
   // ── Onboarding tour ─────────────────────────────────────────────────────
   'Your calendars, together': 'Vos calendriers réunis',
-  'Switch between your calendars and compare dates without losing the identity of your custom calendar.': 'Passez d’un calendrier à l’autre et comparez les dates sans perdre l’identité de votre calendrier personnalisé.',
+  'Switch between your calendars and compare dates without losing the identity of your custom calendar.':
+      'Passez d’un calendrier à l’autre et comparez les dates sans perdre l’identité de votre calendrier personnalisé.',
   'Build a calendar your way': 'Créez un calendrier à votre image',
-  'Choose a template, name your days and months, set month lengths, year start, leap-year rules and year numbering.': 'Choisissez un modèle, nommez les jours et les mois, définissez leur durée, le début de l’année, les règles bissextiles et la numérotation.',
+  'Choose a template, name your days and months, set month lengths, year start, leap-year rules and year numbering.':
+      'Choisissez un modèle, nommez les jours et les mois, définissez leur durée, le début de l’année, les règles bissextiles et la numérotation.',
   'Plan and calculate': 'Planifier et calculer',
-  'Create events, search your schedule, view a day timeline, compare calendar dates and calculate date offsets.': 'Créez des événements, recherchez votre agenda, consultez la journée, comparez les dates et calculez les décalages.',
+  'Create events, search your schedule, view a day timeline, compare calendar dates and calculate date offsets.':
+      'Créez des événements, recherchez votre agenda, consultez la journée, comparez les dates et calculez les décalages.',
   'Welcome to Universal Calendar': 'Bienvenue dans Calendrier universel',
-  'A calendar for every reckoning — Gregorian, Ethiopian, Biblical, Islamic, Julian, and your own designs.': 'Un calendrier pour chaque comput — grégorien, éthiopien, biblique, islamique, julien et vos propres créations.',
-  'Switch between calendars and compare dates without losing your place — the day you selected stays synced across every calendar.': 'Passez d’un calendrier à l’autre et comparez les dates sans perdre votre place — le jour sélectionné reste synchronisé sur tous les calendriers.',
-  'Pick from templates, name your days and months, set month lengths, leap-year rules, and year numbering.': 'Choisissez parmi des modèles, nommez vos jours et vos mois, définissez les durées des mois, les règles bissextiles et la numérotation des années.',
+  'A calendar for every reckoning — Gregorian, Ethiopian, Biblical, Islamic, Julian, and your own designs.':
+      'Un calendrier pour chaque comput — grégorien, éthiopien, biblique, islamique, julien et vos propres créations.',
+  'Switch between calendars and compare dates without losing your place — the day you selected stays synced across every calendar.':
+      'Passez d’un calendrier à l’autre et comparez les dates sans perdre votre place — le jour sélectionné reste synchronisé sur tous les calendriers.',
+  'Pick from templates, name your days and months, set month lengths, leap-year rules, and year numbering.':
+      'Choisissez parmi des modèles, nommez vos jours et vos mois, définissez les durées des mois, les règles bissextiles et la numérotation des années.',
   'Biblical time is built in': 'Le temps biblique est intégré',
-  'The day view can show biblical hours. Set your sunrise hour (6 or 7 AM) in Settings to align the 1st Hour with dawn.': 'La vue journalière peut afficher les heures bibliques. Réglez l’heure du lever du soleil (6 ou 7 h) dans les paramètres pour aligner la 1re heure avec l’aube.',
+  'The day view can show biblical hours. Set your sunrise hour (6 or 7 AM) in Settings to align the 1st Hour with dawn.':
+      'La vue journalière peut afficher les heures bibliques. Réglez l’heure du lever du soleil (6 ou 7 h) dans les paramètres pour aligner la 1re heure avec l’aube.',
   'Never miss a reminder': 'Ne manquez aucun rappel',
-  'Grant notification permission and each event can ring with sound and vibration. Tap "Test notification sound" in Settings to verify.': 'Accordez l’autorisation de notifications et chaque événement peut sonner avec son et vibration. Appuyez sur « Tester le son des notifications » dans les paramètres pour vérifier.',
+  'Grant notification permission and each event can ring with sound and vibration. Tap "Test notification sound" in Settings to verify.':
+      'Accordez l’autorisation de notifications et chaque événement peut sonner avec son et vibration. Appuyez sur « Tester le son des notifications » dans les paramètres pour vérifier.',
   'Your data is yours': 'Vos données vous appartiennent',
-  'Backup as JSON, export to .ics, or duplicate a calendar — from Settings or the Calendars screen. Import into Google or Apple Calendar any time.': 'Sauvegardez en JSON, exportez en .ics ou dupliquez un calendrier — depuis les paramètres ou l’écran des calendriers. Importez dans Google Agenda ou Apple Calendar à tout moment.',
+  'Backup as JSON, export to .ics, or duplicate a calendar — from Settings or the Calendars screen. Import into Google or Apple Calendar any time.':
+      'Sauvegardez en JSON, exportez en .ics ou dupliquez un calendrier — depuis les paramètres ou l’écran des calendriers. Importez dans Google Agenda ou Apple Calendar à tout moment.',
 
   // ── About ───────────────────────────────────────────────────────────────
-  'A fully customizable calendar supporting Gregorian, Ethiopian, Biblical, and user-defined calendars.': 'Un calendrier entièrement personnalisable prenant en charge les calendriers grégorien, éthiopien, biblique et définis par l’utilisateur.',
-  '• Create custom calendar structures': '• Créer des structures de calendrier personnalisées',
-  '• Add events with notes and colors': '• Ajouter des événements avec notes et couleurs',
-  '• Find date equivalents across calendars': '• Trouver des dates équivalentes entre calendriers',
+  'A fully customizable calendar supporting Gregorian, Ethiopian, Biblical, and user-defined calendars.':
+      'Un calendrier entièrement personnalisable prenant en charge les calendriers grégorien, éthiopien, biblique et définis par l’utilisateur.',
+  '• Create custom calendar structures':
+      '• Créer des structures de calendrier personnalisées',
+  '• Add events with notes and colors':
+      '• Ajouter des événements avec notes et couleurs',
+  '• Find date equivalents across calendars':
+      '• Trouver des dates équivalentes entre calendriers',
   '• Dual-calendar display': '• Affichage de deux calendriers',
-  '• Christian tools for daily devotion': '• Outils chrétiens pour la dévotion quotidienne',
-  'No calendars. Create one from the drawer.': 'Aucun calendrier. Créez-en un depuis le menu.',
+  '• Christian tools for daily devotion':
+      '• Outils chrétiens pour la dévotion quotidienne',
+  'No calendars. Create one from the drawer.':
+      'Aucun calendrier. Créez-en un depuis le menu.',
   'Biblical': 'Biblique',
-  'A fully customizable calendar app with dual-calendar support and Christian tools.': 'Une application de calendrier entièrement personnalisable avec double calendrier et outils chrétiens.',
-  'Are you sure you want to delete all calendars and events? This cannot be undone.': 'Voulez-vous vraiment supprimer tous les calendriers et événements ? Cette action est irréversible.',
+  'A fully customizable calendar app with dual-calendar support and Christian tools.':
+      'Une application de calendrier entièrement personnalisable avec double calendrier et outils chrétiens.',
+  'Are you sure you want to delete all calendars and events? This cannot be undone.':
+      'Voulez-vous vraiment supprimer tous les calendriers et événements ? Cette action est irréversible.',
 
   // ── Calculator descriptions ─────────────────────────────────────────────
-  'Calculate the exact day offset between two dates, then move a date forward or backward by that amount.': 'Calculez le décalage exact en jours entre deux dates, puis avancez ou reculez une date de cette durée.',
-  'Use this when your calendar year number differs from the Gregorian year. Offset = calendar year − Gregorian year.': 'Utilisez ceci lorsque l’année de votre calendrier diffère de l’année grégorienne. Décalage = année du calendrier − année grégorienne.',
+  'Calculate the exact day offset between two dates, then move a date forward or backward by that amount.':
+      'Calculez le décalage exact en jours entre deux dates, puis avancez ou reculez une date de cette durée.',
+  'Use this when your calendar year number differs from the Gregorian year. Offset = calendar year − Gregorian year.':
+      'Utilisez ceci lorsque l’année de votre calendrier diffère de l’année grégorienne. Décalage = année du calendrier − année grégorienne.',
   'Total Months:': 'Nombre total de mois :',
   'Total days:': 'Nombre total de jours :',
   'Biblical (sunrise-based)': 'Biblique (basé sur le lever du soleil)',
@@ -315,7 +354,8 @@ const Map<String, String> frenchStrings = {
   'Calendar duplicated': 'Calendrier dupliqué',
   'Backup copied to clipboard': 'Sauvegarde copiée dans le presse-papiers',
   'Backup All Data': 'Sauvegarder toutes les données',
-  'Copy a full JSON backup to the clipboard': 'Copier une sauvegarde JSON complète dans le presse-papiers',
+  'Copy a full JSON backup to the clipboard':
+      'Copier une sauvegarde JSON complète dans le presse-papiers',
   'Restore from backup': 'Restaurer à partir d’une sauvegarde',
   'Paste a JSON backup to restore': 'Collez une sauvegarde JSON à restaurer',
   'Restore': 'Restaurer',
@@ -330,42 +370,48 @@ const Map<String, String> frenchStrings = {
 
   // ── Calendar Guide page ─────────────────────────────────────────────────
   'Calendar Guide': 'Guide des calendriers',
-  'Learn about each calendar in the app': 'Découvrez chaque calendrier de l’application',
-  'Learn the origin, structure, and use of every calendar this app supports.': 'Découvrez l’origine, la structure et l’usage de chaque calendrier pris en charge.',
+  'Learn about each calendar in the app':
+      'Découvrez chaque calendrier de l’application',
+  'Learn the origin, structure, and use of every calendar this app supports.':
+      'Découvrez l’origine, la structure et l’usage de chaque calendrier pris en charge.',
   'Tap to read more': 'Appuyez pour en savoir plus',
   'Origin': 'Origine',
   'Structure': 'Structure',
   'Leap Year': 'Année bissextile',
   'Key Facts': 'Faits essentiels',
   'When to Use': 'Quand l’utiliser',
-  'Dates shown are approximate for historical calendars. Modern observance may vary by community.': 'Les dates affichées sont approximatives pour les calendriers historiques. L’observance moderne peut varier selon la communauté.',
+  'Dates shown are approximate for historical calendars. Modern observance may vary by community.':
+      'Les dates affichées sont approximatives pour les calendriers historiques. L’observance moderne peut varier selon la communauté.',
   'The international civil calendar': 'Le calendrier civil international',
   'The pre-1582 Roman calendar': 'Le calendrier romain avant 1582',
-  'The calendar of Ethiopia and Eritrea': 'Le calendrier de l’Éthiopie et de l’Érythrée',
-  'The liturgical calendar of the Coptic Church': 'Le calendrier liturgique de l’Église copte',
+  'The calendar of Ethiopia and Eritrea':
+      'Le calendrier de l’Éthiopie et de l’Érythrée',
+  'The liturgical calendar of the Coptic Church':
+      'Le calendrier liturgique de l’Église copte',
   'The Hebrew lunisolar calendar': 'Le calendrier hébraïque lunisolaire',
   'The Hijri lunar calendar': 'Le calendrier lunaire hégirien',
-  'The calendar of the First French Republic': 'Le calendrier de la Première République française',
+  'The calendar of the First French Republic':
+      'Le calendrier de la Première République française',
   'Design your own calendar': 'Concevez votre propre calendrier',
-    'Special Days': 'Jours spéciaux',
+  'Special Days': 'Jours spéciaux',
   'No special days yet': 'Aucun jour spécial pour le moment',
   'Tap + to add one': 'Appuyez sur + pour en ajouter un',
   'Add': 'Ajouter',
   'Edit': 'Modifier',
   'Icon': 'Icône',
-    'Never miss a moment': 'Ne manquez aucun moment',
+  'Never miss a moment': 'Ne manquez aucun moment',
   'Allow notifications so your calendar reminders can ring with sound and vibration at the right time.':
       'Autorisez les notifications pour que vos rappels sonnent avec du son et des vibrations au bon moment.',
   'Enable notifications': 'Activer les notifications',
   'Not now': 'Pas maintenant',
   'Notifications enabled': 'Notifications activées',
-    'Add a calendar': 'Ajouter un calendrier',
+  'Add a calendar': 'Ajouter un calendrier',
   'Tap a calendar type to add it instantly. You can rename it later.':
       'Touchez un type de calendrier pour l’ajouter instantanément. Vous pourrez le renommer plus tard.',
   'Added': 'Ajouté',
-    'Are you sure you want to delete this event?':
+  'Are you sure you want to delete this event?':
       'Voulez-vous vraiment supprimer cet événement ?',
-        'Export PDF': 'Exporter en PDF',
+  'Export PDF': 'Exporter en PDF',
   'Which calendar?': 'Quel calendrier ?',
   'Range': 'Plage',
   'Full year': 'Année complète',
@@ -385,5 +431,56 @@ const Map<String, String> frenchStrings = {
   'Export failed': 'Échec de l’export',
   'No calendars': 'Aucun calendrier',
   'Calendar': 'Calendrier',
-  
+
+  // ── Reminder sounds ─────────────────────────────────────────────────────
+  'Reminder sound': 'Son du rappel',
+  'Default alert tone for new events':
+      'Son d’alerte par défaut des nouveaux événements',
+  'System default': 'Système (par défaut)',
+  'Soft chime': 'Carillon doux',
+  'Bell': 'Cloche',
+  'Church bells': 'Cloches d’église',
+  'Digital beep': 'Bip numérique',
+  'Marimba': 'Marimba',
+  'Harp': 'Harpe',
+  'Drum': 'Tambour',
+  'Birds': 'Oiseaux',
+  'Hallelujah': 'Alléluia',
+  'Piano': 'Piano',
+  'Water drops': 'Gouttes d’eau',
+  'Preview': 'Écouter',
+  'Pick the tone used by default. Each event can still override it.':
+      'Choisissez le son utilisé par défaut. Chaque événement peut le remplacer.',
+  'Tap a tone to hear it, then confirm.':
+      'Touchez un son pour l’écouter, puis confirmez.',
+
+  // ── Day view ────────────────────────────────────────────────────────────
+  'Schedule': 'Programme',
+  'No timed events': 'Aucun événement horaire',
+  'Nothing scheduled': 'Rien de prévu',
+  'A free day. Add an event to make it count.':
+      'Une journée libre. Ajoutez un événement pour en profiter.',
+  'Save to device': 'Enregistrer sur l’appareil',
+  'Calendar shared from Universal Calendar':
+      'Calendrier partagé depuis Calendrier universel',
+  'From month': 'Du mois',
+  'To month': 'Au mois',
+  'Start Year': 'Année de début',
+  'End Year': 'Année de fin',
+  'Use this tone': 'Utiliser ce son',
+  'Open Day View': 'Ouvrir la vue du jour',
+  'See full day timeline': 'Voir la journée complète',
+  'Delete all events on this date':
+      'Supprimer tous les événements de cette date',
+  'See this date in all calendars': 'Voir cette date dans tous les calendriers',
+  'No notes': 'Aucune note',
+
+  // ── Edit calendar ────────────────────────────────────
+  'Name & Icon': 'Nom et icône',
+  'Year offset': 'Décalage d’année',
+  'Offset = calendar year − Gregorian year':
+      'Décalage = année du calendrier − année grégorienne',
+  'Calendar updated': 'Calendrier mis à jour',
+  'To change month lengths or leap rules, duplicate this calendar and create a new one.':
+      'Pour modifier la durée des mois ou les règles bissextiles, dupliquez ce calendrier et créez-en un nouveau.',
 };

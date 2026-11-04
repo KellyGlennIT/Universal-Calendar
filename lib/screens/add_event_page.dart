@@ -6,6 +6,7 @@ import '../providers/calendar_provider.dart';
 import '../providers/locale_provider.dart';
 import '../services/notification_service.dart';
 import '../utils/calendar_math.dart';
+import '../utils/notification_sounds.dart';
 import '../l10n/tr.dart';
 
 /// Create or edit a single event.
@@ -31,6 +32,7 @@ class _AddEventPageState extends State<AddEventPage> {
   late String _timeFormat;
   bool _isAllDay = false;
   int? _reminderMinutesBefore;
+  String? _reminderSound;
   int _durationMinutes = 60;
   bool _saving = false;
 
@@ -61,12 +63,14 @@ class _AddEventPageState extends State<AddEventPage> {
       _notesController.text = e.notes;
       _isAllDay = e.isAllDay;
       _reminderMinutesBefore = e.reminderMinutesBefore;
+      _reminderSound = e.reminderSound;
       _durationMinutes = e.durationMinutes;
     } else {
       _selectedDate = provider.selectedDate;
       _selectedTime = TimeOfDay.now();
       _selectedColor = Colors.blue;
       _isAllDay = false;
+      _reminderSound = provider.defaultReminderSound;
     }
     _calendar = provider.selectedCalendar;
     _timeFormat = _calendar?.timeFormat ?? '24h';
@@ -118,11 +122,8 @@ class _AddEventPageState extends State<AddEventPage> {
                         const SizedBox(width: 12),
                         Expanded(
                             child: Text(dateStr,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyLarge)),
-                        const Icon(Icons.arrow_drop_down,
-                            color: Colors.grey),
+                                style: Theme.of(context).textTheme.bodyLarge)),
+                        const Icon(Icons.arrow_drop_down, color: Colors.grey),
                       ]),
                     ),
                     const Divider(),
@@ -148,17 +149,15 @@ class _AddEventPageState extends State<AddEventPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(_getFormattedTime(),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge),
+                                    style:
+                                        Theme.of(context).textTheme.bodyLarge),
                                 Text(_getTimeFormatLabel(),
                                     style: const TextStyle(
                                         fontSize: 12, color: Colors.grey)),
                               ],
                             ),
                           ),
-                          const Icon(Icons.arrow_drop_down,
-                              color: Colors.grey),
+                          const Icon(Icons.arrow_drop_down, color: Colors.grey),
                         ]),
                       ),
                     ],
@@ -169,8 +168,8 @@ class _AddEventPageState extends State<AddEventPage> {
                 const SizedBox(height: 12),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: DropdownButtonFormField<int>(
                       key: ValueKey('duration_$_durationMinutes'),
                       initialValue: _durationMinutes,
@@ -181,26 +180,19 @@ class _AddEventPageState extends State<AddEventPage> {
                       ),
                       items: [
                         DropdownMenuItem(
-                            value: 15,
-                            child: Text(tr(context, '15 min'))),
+                            value: 15, child: Text(tr(context, '15 min'))),
                         DropdownMenuItem(
-                            value: 30,
-                            child: Text(tr(context, '30 min'))),
+                            value: 30, child: Text(tr(context, '30 min'))),
                         DropdownMenuItem(
-                            value: 45,
-                            child: Text(tr(context, '45 min'))),
+                            value: 45, child: Text(tr(context, '45 min'))),
                         DropdownMenuItem(
-                            value: 60,
-                            child: Text(tr(context, '1 hour'))),
+                            value: 60, child: Text(tr(context, '1 hour'))),
                         DropdownMenuItem(
-                            value: 90,
-                            child: Text(tr(context, '1.5 hours'))),
+                            value: 90, child: Text(tr(context, '1.5 hours'))),
                         DropdownMenuItem(
-                            value: 120,
-                            child: Text(tr(context, '2 hours'))),
+                            value: 120, child: Text(tr(context, '2 hours'))),
                         DropdownMenuItem(
-                            value: 180,
-                            child: Text(tr(context, '3 hours'))),
+                            value: 180, child: Text(tr(context, '3 hours'))),
                       ],
                       onChanged: (v) =>
                           setState(() => _durationMinutes = v ?? 60),
@@ -211,45 +203,37 @@ class _AddEventPageState extends State<AddEventPage> {
               const SizedBox(height: 12),
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: DropdownButtonFormField<int?>(
                     key: ValueKey(
                         'reminder_${_reminderMinutesBefore ?? 'none'}'),
                     initialValue: _reminderMinutesBefore,
                     decoration: InputDecoration(
                       labelText: tr(context, 'Reminder'),
-                      prefixIcon: const Icon(
-                          Icons.notifications_active_outlined),
+                      prefixIcon:
+                          const Icon(Icons.notifications_active_outlined),
                       border: InputBorder.none,
                     ),
                     items: <DropdownMenuItem<int?>>[
                       DropdownMenuItem(
-                          value: null,
-                          child: Text(tr(context, 'No reminder'))),
+                          value: null, child: Text(tr(context, 'No reminder'))),
                       DropdownMenuItem(
-                          value: 0,
-                          child: Text(tr(context, 'At event time'))),
+                          value: 0, child: Text(tr(context, 'At event time'))),
                       DropdownMenuItem(
                           value: 5,
-                          child:
-                              Text(tr(context, '5 minutes before'))),
+                          child: Text(tr(context, '5 minutes before'))),
                       DropdownMenuItem(
                           value: 10,
-                          child:
-                              Text(tr(context, '10 minutes before'))),
+                          child: Text(tr(context, '10 minutes before'))),
                       DropdownMenuItem(
                           value: 15,
-                          child:
-                              Text(tr(context, '15 minutes before'))),
+                          child: Text(tr(context, '15 minutes before'))),
                       DropdownMenuItem(
                           value: 30,
-                          child:
-                              Text(tr(context, '30 minutes before'))),
+                          child: Text(tr(context, '30 minutes before'))),
                       DropdownMenuItem(
-                          value: 60,
-                          child:
-                              Text(tr(context, '1 hour before'))),
+                          value: 60, child: Text(tr(context, '1 hour before'))),
                       DropdownMenuItem(
                           value: 1440,
                           child: Text(tr(context, '1 day before'))),
@@ -259,6 +243,34 @@ class _AddEventPageState extends State<AddEventPage> {
                   ),
                 ),
               ),
+              if (_reminderMinutesBefore != null) ...[
+                const SizedBox(height: 12),
+                Card(
+                  child: ListTile(
+                    leading: Icon(toneById(_reminderSound).icon),
+                    title: Text(tr(context, 'Reminder sound')),
+                    subtitle: Text(
+                      tr(context, toneById(_reminderSound).label),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.play_circle_outline),
+                          tooltip: tr(context, 'Preview'),
+                          onPressed: () =>
+                              CalendarNotificationService.previewTone(
+                                  _reminderSound),
+                        ),
+                        const Icon(Icons.chevron_right),
+                      ],
+                    ),
+                    onTap: () => _pickReminderSound(context),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
@@ -267,8 +279,7 @@ class _AddEventPageState extends State<AddEventPage> {
                       : Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Theme.of(context).brightness ==
-                            Brightness.dark
+                    color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.grey.shade800
                         : Colors.grey.shade300,
                   ),
@@ -277,22 +288,19 @@ class _AddEventPageState extends State<AddEventPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                       child: Text(tr(context, 'Notes'),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600)),
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
                     ),
                     TextFormField(
                       controller: _notesController,
                       decoration: InputDecoration(
-                        hintText:
-                            tr(context, 'Add details or reminders...'),
+                        hintText: tr(context, 'Add details or reminders...'),
                         hintStyle: const TextStyle(fontSize: 13),
                         border: InputBorder.none,
                         filled: false,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16),
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       maxLines: 4,
                     ),
@@ -308,8 +316,7 @@ class _AddEventPageState extends State<AddEventPage> {
                 runSpacing: 12,
                 children: _colors.map((color) {
                   return GestureDetector(
-                    onTap: () =>
-                        setState(() => _selectedColor = color),
+                    onTap: () => setState(() => _selectedColor = color),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       width: 40,
@@ -326,8 +333,7 @@ class _AddEventPageState extends State<AddEventPage> {
                         boxShadow: _selectedColor == color
                             ? [
                                 BoxShadow(
-                                    color:
-                                        color.withValues(alpha: 0.4),
+                                    color: color.withValues(alpha: 0.4),
                                     blurRadius: 8),
                               ]
                             : null,
@@ -364,8 +370,7 @@ class _AddEventPageState extends State<AddEventPage> {
                               ? tr(context, 'Save Event')
                               : tr(context, 'Update Event'),
                           style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold),
+                              fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                 ),
               ),
@@ -378,8 +383,7 @@ class _AddEventPageState extends State<AddEventPage> {
 
   String _getFormattedTime() {
     final sunriseHour =
-        Provider.of<CalendarProvider>(context, listen: false)
-            .sunriseHour;
+        Provider.of<CalendarProvider>(context, listen: false).sunriseHour;
     if (_timeFormat == 'biblical') {
       return CalendarMath.getBiblicalTime(
           _selectedTime.hour, _selectedTime.minute,
@@ -415,6 +419,95 @@ class _AddEventPageState extends State<AddEventPage> {
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
+  Future<void> _pickReminderSound(BuildContext context) async {
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).dividerColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text(
+                tr(context, 'Reminder sound'),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                tr(context, 'Tap a tone to hear it, then confirm.'),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: notificationTones.length,
+                  itemBuilder: (context, index) {
+                    final tone = notificationTones[index];
+                    final isSelected = toneById(_reminderSound).id == tone.id;
+                    return ListTile(
+                      dense: true,
+                      leading: Icon(
+                        tone.icon,
+                        color:
+                            isSelected ? Theme.of(context).primaryColor : null,
+                      ),
+                      title: Text(tr(context, tone.label)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isSelected)
+                            Icon(Icons.check_circle,
+                                size: 20,
+                                color: Theme.of(context).primaryColor),
+                          IconButton(
+                            icon:
+                                const Icon(Icons.play_circle_outline, size: 20),
+                            tooltip: tr(context, 'Preview'),
+                            onPressed: () =>
+                                CalendarNotificationService.previewTone(
+                                    tone.id),
+                          ),
+                        ],
+                      ),
+                      onTap: () {
+                        CalendarNotificationService.previewTone(tone.id);
+                        Navigator.pop(sheetContext, tone.id);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() => _reminderSound = picked);
+    }
+  }
+
   Future<void> _selectTime(BuildContext context) async {
     if (_timeFormat == 'biblical') {
       _showBiblicalTimePicker(context);
@@ -423,8 +516,8 @@ class _AddEventPageState extends State<AddEventPage> {
         context: context,
         initialTime: _selectedTime,
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-              alwaysUse24HourFormat: _timeFormat == '24h'),
+          data: MediaQuery.of(context)
+              .copyWith(alwaysUse24HourFormat: _timeFormat == '24h'),
           child: child!,
         ),
       );
@@ -434,8 +527,7 @@ class _AddEventPageState extends State<AddEventPage> {
 
   void _showBiblicalTimePicker(BuildContext context) {
     final sunriseHour =
-        Provider.of<CalendarProvider>(context, listen: false)
-            .sunriseHour;
+        Provider.of<CalendarProvider>(context, listen: false).sunriseHour;
     final sunsetHour = sunriseHour + 12;
     final labels = <String>[];
     final values = <int>[];
@@ -462,17 +554,15 @@ class _AddEventPageState extends State<AddEventPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(tr(context, 'Select Biblical Time'),
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const Divider(),
             Expanded(
               child: ListView.builder(
                 itemCount: labels.length,
                 itemBuilder: (context, index) => ListTile(
                   leading: Icon(
-                      index < 12
-                          ? Icons.wb_sunny
-                          : Icons.nightlight_round,
+                      index < 12 ? Icons.wb_sunny : Icons.nightlight_round,
                       size: 20),
                   title: Text(labels[index]),
                   onTap: () {
@@ -505,8 +595,7 @@ class _AddEventPageState extends State<AddEventPage> {
   Future<void> _saveEvent() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _saving = true);
-    final provider =
-        Provider.of<CalendarProvider>(context, listen: false);
+    final provider = Provider.of<CalendarProvider>(context, listen: false);
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final dateStr = CalendarMath.formatDate(_selectedDate, 'YYYY-MM-DD');
@@ -521,19 +610,19 @@ class _AddEventPageState extends State<AddEventPage> {
       notes: _notesController.text,
       calendarId: provider.selectedCalendarId.isNotEmpty
           ? provider.selectedCalendarId
-          : (provider.calendars.isNotEmpty
-              ? provider.calendars.first.id
-              : ''),
+          : (provider.calendars.isNotEmpty ? provider.calendars.first.id : ''),
       color: _selectedColor,
       reminderMinutesBefore: _reminderMinutesBefore,
       isAllDay: _isAllDay,
       durationMinutes: _durationMinutes,
+      reminderSound: _reminderMinutesBefore == null
+          ? null
+          : (widget.eventToEdit?.reminderSound ?? _reminderSound),
     );
 
     var reminderDenied = false;
     if (_reminderMinutesBefore != null) {
-      final granted =
-          await CalendarNotificationService.requestPermission();
+      final granted = await CalendarNotificationService.requestPermission();
       reminderDenied = !granted;
     }
     if (widget.eventToEdit == null) {

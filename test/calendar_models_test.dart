@@ -33,8 +33,19 @@ CalendarModel _ethiopianCal({int yearOffset = -8}) => CalendarModel(
       weeksPerMonth: 4,
       monthsPerYear: 13,
       monthNames: const [
-        'Meskerem', 'Tikimt', 'Hedar', 'Tahsas', 'Tir', 'Yekatit',
-        'Megabit', 'Miazia', 'Genbot', 'Sene', 'Hamle', 'Nehase', 'Pagume',
+        'Meskerem',
+        'Tikimt',
+        'Hedar',
+        'Tahsas',
+        'Tir',
+        'Yekatit',
+        'Megabit',
+        'Miazia',
+        'Genbot',
+        'Sene',
+        'Hamle',
+        'Nehase',
+        'Pagume',
       ],
       yearStart: '2026-09-11',
       timeFormat: '12h',
@@ -53,8 +64,18 @@ CalendarModel _biblicalCal() => CalendarModel(
       weeksPerMonth: 4,
       monthsPerYear: 12,
       monthNames: const [
-        'Tishri', 'Cheshvan', 'Kislev', 'Tevet', 'Shevat', 'Adar',
-        'Nisan', 'Iyar', 'Sivan', 'Tammuz', 'Av', 'Elul',
+        'Tishri',
+        'Cheshvan',
+        'Kislev',
+        'Tevet',
+        'Shevat',
+        'Adar',
+        'Nisan',
+        'Iyar',
+        'Sivan',
+        'Tammuz',
+        'Av',
+        'Elul',
       ],
       yearStart: '2026-09-16',
       timeFormat: 'biblical',
@@ -81,7 +102,8 @@ CalendarModel _customCal({
     id: 'custom-test',
     name: 'Custom',
     daysPerWeek: daysPerWeek,
-    dayNames: dayNames ?? const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    dayNames:
+        dayNames ?? const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     weeksPerMonth: 4,
     monthsPerYear: months,
     monthNames: monthNames ?? List.generate(12, (i) => 'Month ${i + 1}'),
@@ -263,8 +285,8 @@ void main() {
     });
 
     test('just before sunrise is the 12th hour of night', () {
-      expect(CalendarMath.getBiblicalTime(5, 0),
-          contains('12th Hour of Night'));
+      expect(
+          CalendarMath.getBiblicalTime(5, 0), contains('12th Hour of Night'));
     });
 
     test('sunrise hour is configurable', () {

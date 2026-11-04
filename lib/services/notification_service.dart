@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import '../models/calendar_event.dart';
+import '../utils/notification_sounds.dart';
 
 /// Holds the event ID from a tapped notification until the app's navigation
 /// stack is ready to consume it (or `null` if no notification was tapped).
@@ -112,11 +113,21 @@ class CalendarNotificationService {
     return granted ?? false;
   }
 
-  /// Fires an immediate test notification — used by Settings → "Test sound".
-  static Future<void> sendTestNotification() async {
+  /// Plays [toneId] immediately so the user can audition it in the picker.
+  ///
+  /// The tone is resolved to its channel sound; the platform default is used
+  /// when the tone has no bundled resource.
+  static Future<void> previewTone(String? toneId) =>
+      sendTestNotification(toneId: toneId);
+
+  /// Fires an immediate test notification — used by Settings → "Test sound"
+  /// and by the tone picker's preview buttons.
+  static Future<void> sendTestNotification({String? toneId}) async {
     if (kIsWeb) return;
     final prefs = await SharedPreferences.getInstance();
     final isFrench = prefs.getString('app_language') == 'fr';
+    final androidSound = androidNotificationSoundFor(toneId);
+    final iosSound = iosSoundFor(toneId);
     await _plugin.show(
       9001,
       isFrench
@@ -133,13 +144,15 @@ class CalendarNotificationService {
           importance: Importance.max,
           priority: Priority.max,
           playSound: true,
+          sound: androidSound,
           enableVibration: true,
           category: AndroidNotificationCategory.alarm,
           visibility: NotificationVisibility.public,
         ),
-        iOS: const DarwinNotificationDetails(
+        iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentSound: true,
+          sound: iosSound,
           presentBadge: true,
           interruptionLevel: InterruptionLevel.timeSensitive,
         ),
@@ -207,6 +220,8 @@ class CalendarNotificationService {
           : (isFrench
               ? 'Votre événement commence dans $minutes minutes.'
               : 'Your event starts in $minutes minutes.');
+      final androidSound = androidNotificationSoundFor(event.reminderSound);
+      final iosSound = iosSoundFor(event.reminderSound);
       await _plugin.zonedSchedule(
         _notificationId(event.id),
         event.title,
@@ -220,14 +235,16 @@ class CalendarNotificationService {
             importance: Importance.max,
             priority: Priority.max,
             playSound: true,
+            sound: androidSound,
             enableVibration: true,
             category: AndroidNotificationCategory.reminder,
             ticker: 'Calendar reminder',
             visibility: NotificationVisibility.public,
           ),
-          iOS: const DarwinNotificationDetails(
+          iOS: DarwinNotificationDetails(
             presentAlert: true,
             presentSound: true,
+            sound: iosSound,
             presentBadge: true,
             interruptionLevel: InterruptionLevel.timeSensitive,
           ),

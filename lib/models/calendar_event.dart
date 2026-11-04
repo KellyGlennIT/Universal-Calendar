@@ -13,6 +13,11 @@ class CalendarEvent {
   String calendarId;
   Color color;
   int? reminderMinutesBefore;
+
+  /// Reminder tone ID (see `notification_sounds.dart`); `null` means the
+  /// system default. Persisted so a reminder keeps its sound after a restart
+  /// or a reboot-driven reschedule.
+  String? reminderSound;
   bool isAllDay;
   int durationMinutes;
 
@@ -25,6 +30,7 @@ class CalendarEvent {
     required this.calendarId,
     this.color = Colors.blue,
     this.reminderMinutesBefore,
+    this.reminderSound,
     this.isAllDay = false,
     this.durationMinutes = 60,
   });
@@ -38,6 +44,7 @@ class CalendarEvent {
         'calendarId': calendarId,
         'color': color.toARGB32(),
         'reminderMinutesBefore': reminderMinutesBefore,
+        'reminderSound': reminderSound,
         'isAllDay': isAllDay,
         'durationMinutes': durationMinutes,
       };
@@ -51,6 +58,7 @@ class CalendarEvent {
         calendarId: json['calendarId'] ?? '',
         color: Color((json['color'] as int?) ?? Colors.blue.toARGB32()),
         reminderMinutesBefore: json['reminderMinutesBefore'] as int?,
+        reminderSound: json['reminderSound'] as String?,
         isAllDay: json['isAllDay'] as bool? ?? (json['time'] == '00:00'),
         durationMinutes: (json['durationMinutes'] as int?) ?? 60,
       );

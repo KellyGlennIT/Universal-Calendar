@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/calendar_event.dart';
+import '../models/calendar_model.dart';
+import '../models/special_day.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/calendar_math.dart';
@@ -10,6 +13,17 @@ import 'add_event_page.dart';
 import 'equivalents_page.dart';
 import 'event_detail_page.dart';
 
+/// A focused view of a single day.
+///
+/// Layout:
+///   • Hero header — big date number, weekday, native calendar label and the
+///     secondary (comparison) calendar, plus today/special-day chips.
+///   • A lazily built horizontal day strip for quick navigation.
+///   • All-day events as coloured pills.
+///   • A timeline that only builds the rows currently on screen.
+///
+/// Everything is built lazily and avoids nested scrolling, so swiping between
+/// days stays smooth even with a long agenda.
 class DayViewPage extends StatefulWidget {
   final DateTime selectedDate;
   const DayViewPage({super.key, required this.selectedDate});
@@ -20,11 +34,26 @@ class DayViewPage extends StatefulWidget {
 
 class _DayViewPageState extends State<DayViewPage> {
   late DateTime _currentDate;
+  late final ScrollController _stripController;
+
+  static const int _stripWindow = 200;
+  static const double _stripTileWidth = 62;
+  static const double _stripPadding = 4;
+
+  /// Events of the selected calendar, indexed by `YYYY-MM-DD`. Rebuilt only
+  /// when the event list or the selected calendar changes, so scrolling the
+  /// agenda never re-scans the whole store on every day change.
+  final Map<String, List<CalendarEvent>> _eventsByDate = {};
+  List<CalendarEvent>? _indexedEvents;
+  String? _indexedCalendarId;
 
   @override
   void initState() {
     super.initState();
-    _currentDate = widget.selectedDate;
+    _currentDate = _dateOnly(widget.selectedDate);
+    _stripController = ScrollController(
+      initialScrollOffset: _stripOffsetFor(widget.selectedDate) - _stripPadding,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         Provider.of<CalendarProvider>(context, listen: false)
@@ -34,8 +63,97 @@ class _DayViewPageState extends State<DayViewPage> {
   }
 
   @override
+  void dispose() {
+    _stripController.dispose();
+    super.dispose();
+  }
+
+  static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  String _dateKey(DateTime d) => CalendarMath.formatDate(d, 'YYYY-MM-DD');
+
+  void _jumpTo(DateTime date, {bool syncProvider = true}) {
+    final next = _dateOnly(date);
+    if (next == _currentDate) return;
+    setState(() => _currentDate = next);
+    if (syncProvider) {
+      Provider.of<CalendarProvider>(context, listen: false).selectDate(next);
+    }
+    // Let the strip finish settling if the jump came from a strip gesture.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scrollStripToCentre(next);
+    });
+  }
+
+  static double _stripCentreOffset(DateTime date) {
+    final today = _dateOnly(DateTime.now());
+    return (_stripWindow + today.difference(date).inDays) * _stripTileWidth;
+  }
+
+  /// Scroll offset that puts [date]'s tile on the left edge of the strip.
+  static double _stripOffsetFor(DateTime date) {
+    final offset = _stripCentreOffset(date);
+    final maxOffset = (_stripWindow * 2 + 1) * _stripTileWidth;
+    return offset.clamp(0.0, maxOffset.toDouble());
+  }
+
+  void _scrollStripToCentre(DateTime date, {bool animate = true}) {
+    if (!_stripController.hasClients) return;
+    final position = _stripController.position;
+    final target = (_stripCentreOffset(date) -
+            position.viewportDimension / 2 +
+            _stripTileWidth / 2)
+        .clamp(0.0, position.maxScrollExtent);
+    if (animate) {
+      _stripController.animateTo(
+        target.toDouble(),
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      _stripController.jumpTo(target.toDouble());
+    }
+  }
+
+  /// Brings the day strip back in line with [_currentDate] after a fling or a
+  /// tap, so the selected chip can never be scrolled out of sight.
+  void _settleStrip() {
+    if (!_stripController.hasClients) return;
+    final position = _stripController.position;
+    if (!position.hasContentDimensions || position.viewportDimension == 0) {
+      return;
+    }
+    final centre = _stripCentreOffset(_currentDate);
+    final current =
+        (centre - _stripPadding).clamp(0.0, position.maxScrollExtent);
+    if ((position.pixels - current).abs() <= _stripTileWidth / 2) return;
+    _scrollStripToCentre(_currentDate);
+  }
+
+  /// Finds the event list for [date], rebuilding the index only when the
+  /// source list or the selected calendar actually changed.
+  List<CalendarEvent> _dayEvents(CalendarProvider provider, DateTime date) {
+    if (!identical(_indexedEvents, provider.events) ||
+        _indexedCalendarId != provider.selectedCalendarId) {
+      _indexedEvents = provider.events;
+      _indexedCalendarId = provider.selectedCalendarId;
+      _eventsByDate.clear();
+      for (final event in provider.events) {
+        if (event.calendarId != provider.selectedCalendarId) continue;
+        _eventsByDate.putIfAbsent(event.date, () => []).add(event);
+      }
+      for (final list in _eventsByDate.values) {
+        list.sort((a, b) => a.time.compareTo(b.time));
+      }
+    }
+    return _eventsByDate[_dateKey(date)] ?? const <CalendarEvent>[];
+  }
+
+  void _shiftDay(int delta) => _jumpTo(_currentDate.add(Duration(days: delta)));
+
+  @override
   Widget build(BuildContext context) {
-    context.watch<LocaleProvider>();
+    final locale = context.watch<LocaleProvider>().languageCode;
     final provider = Provider.of<CalendarProvider>(context);
     final cal = provider.selectedCalendar;
     final secondaryCal = provider.secondaryCalendarId != null && cal != null
@@ -44,408 +162,630 @@ class _DayViewPageState extends State<DayViewPage> {
             orElse: () => cal,
           )
         : null;
-    final localeCode = context.watch<LocaleProvider>().languageCode;
-    final dateStr = CalendarMath.formatDate(_currentDate, 'YYYY-MM-DD');
-    final dayEvents = provider.events
-        .where((e) =>
-            e.date == dateStr && e.calendarId == provider.selectedCalendarId)
-        .toList()
-      ..sort((a, b) => a.time.compareTo(b.time));
+
+    final info = cal == null
+        ? const <String, dynamic>{}
+        : CalendarMath.getCalendarDateInfo(cal, _currentDate);
+    final dayNumber = (info['day'] as int?) ?? _currentDate.day;
+    final monthName = (info['monthName'] as String?) ??
+        DateFormat('MMMM', locale).format(_currentDate);
+    final yearNumber = (info['year'] as int?) ?? _currentDate.year;
+
+    final dayEvents = _dayEvents(provider, _currentDate);
     final allDayEvents = dayEvents.where((e) => e.isAllDay).toList();
     final timedEvents = dayEvents.where((e) => !e.isAllDay).toList();
+    final specials = cal == null
+        ? const <SpecialDay>[]
+        : cal.specialDays
+            .where((sd) =>
+                sd.month == (info['month'] as int? ?? -1) &&
+                sd.day == dayNumber)
+            .toList();
+
+    final accent =
+        cal == null ? Theme.of(context).primaryColor : _hexColor(cal.colorHex);
+    final isToday = _dateOnly(DateTime.now()) == _currentDate;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.today, color: Colors.white),
-            onPressed: () {
-              setState(() => _currentDate = DateTime.now());
-              provider.goToToday();
-            },
-            tooltip: tr(context, 'Today'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.swap_horiz, color: Colors.white),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => EquivalentsPage(initialDate: _currentDate)),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          final v = details.primaryVelocity ?? 0;
+          if (v < -220) _shiftDay(1);
+          if (v > 220) _shiftDay(-1);
+        },
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: _hero(
+                context: context,
+                accent: accent,
+                isDark: isDark,
+                isToday: isToday,
+                dayNumber: dayNumber,
+                monthName: monthName,
+                yearNumber: yearNumber,
+                locale: locale,
+                secondaryCal: secondaryCal,
+                eventCount: dayEvents.length,
+                specials: specials,
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.white),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddEventPage()),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _StripHeader(
+                height: 76,
+                background: Theme.of(context).scaffoldBackgroundColor,
+                child: _dayStrip(context, locale, accent),
+              ),
             ),
-          ),
-        ],
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              DateFormat('EEEE, MMMM dd, yyyy', localeCode)
-                  .format(_currentDate),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white, fontSize: 15),
-            ),
-            if (secondaryCal != null)
-              Builder(builder: (_) {
-                final info = CalendarMath.getCalendarDateInfo(
-                    secondaryCal, _currentDate);
-                return Text(
-                  '${info['monthName']} ${info['day']}, ${info['year']}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                );
-              }),
+            if (allDayEvents.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _allDaySection(context, allDayEvents, accent),
+              ),
+            if (dayEvents.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _emptyState(context, accent),
+              )
+            else ...[
+              SliverToBoxAdapter(
+                  child: _sectionLabel(context, tr(context, 'Schedule'))),
+              SliverList.builder(
+                itemCount: timedEvents.length,
+                itemBuilder: (context, index) => _timelineRow(
+                  context,
+                  provider,
+                  cal,
+                  timedEvents[index],
+                  locale,
+                  accent,
+                ),
+              ),
+            ],
+            const SliverToBoxAdapter(child: SizedBox(height: 96)),
           ],
         ),
       ),
-      body: GestureDetector(
-        onHorizontalDragEnd: (details) {
-          final velocity = details.primaryVelocity ?? 0;
-          if (velocity < -180) {
-            setState(() => _currentDate =
-                _currentDate.add(const Duration(days: 1)));
-            provider.selectDate(_currentDate);
-          } else if (velocity > 180) {
-            setState(() => _currentDate =
-                _currentDate.subtract(const Duration(days: 1)));
-            provider.selectDate(_currentDate);
-          }
-        },
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF0A0E17), Color(0xFF1A1F2E)],
-            ),
-          ),
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (cal != null)
-                  Builder(builder: (_) {
-                    final dateInfo =
-                        CalendarMath.getCalendarDateInfo(cal, _currentDate);
-                    final special = cal.specialDays
-                        .where((sd) =>
-                            sd.month == (dateInfo['month'] as int) &&
-                            sd.day == (dateInfo['day'] as int))
-                        .toList();
-                    if (special.isEmpty) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: special
-                            .map((sd) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: sd.color.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color:
-                                            sd.color.withValues(alpha: 0.4)),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(sd.emoji,
-                                          style: const TextStyle(
-                                              fontSize: 16)),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        sd.name,
-                                        style: TextStyle(
-                                          color: sd.color,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ))
-                            .toList(),
-                      ),
-                    );
-                  }),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Text(
-                    '${dayEvents.length} ${dayEvents.length == 1 ? tr(context, 'Event') : tr(context, 'Events')}',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                if (allDayEvents.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: allDayEvents
-                          .map((event) => ActionChip(
-                                avatar: CircleAvatar(
-                                    radius: 5,
-                                    backgroundColor: event.color),
-                                label: Text(event.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis),
-                                onPressed: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          EventDetailPage(event: event)),
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                  ),
-                Expanded(child: _buildTimeline(context, timedEvents)),
-              ],
-            ),
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const AddEventPage()),
         ),
-        tooltip: tr(context, 'Add event'),
-        backgroundColor: Theme.of(context).primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: accent,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: Text(tr(context, 'Add event')),
       ),
     );
   }
 
-  Widget _buildTimeline(BuildContext context, List<CalendarEvent> events) {
-    final provider = Provider.of<CalendarProvider>(context, listen: false);
-    final cal = provider.selectedCalendar;
-    if (cal == null) {
-      return Center(child: Text(tr(context, 'Select a calendar')));
-    }
-    final effectiveFormat = provider.getEffectiveTimeFormat(cal);
-    final showSeconds = provider.showSeconds;
-    final showDayNight = provider.showDayNight;
-    final sunriseHour = provider.sunriseHour;
+  // ── Hero header ──────────────────────────────────────────────────────
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-      itemCount: 24,
-      itemBuilder: (context, hour) {
-        final hourEvents = events
-            .where((e) => CalendarMath.getHourFromTimeString(e.time) == hour)
-            .toList();
+  Widget _hero({
+    required BuildContext context,
+    required Color accent,
+    required bool isDark,
+    required bool isToday,
+    required int dayNumber,
+    required String monthName,
+    required int yearNumber,
+    required String locale,
+    required CalendarModel? secondaryCal,
+    required int eventCount,
+    required List<SpecialDay> specials,
+  }) {
+    final theme = Theme.of(context);
+    final fg = isDark
+        ? theme.textTheme.bodyLarge?.color ?? Colors.white
+        : Colors.white;
 
-        String hourLabel;
-        if (effectiveFormat == 'biblical') {
-          hourLabel =
-              CalendarMath.getBiblicalTime(hour, 0, sunriseHour: sunriseHour);
-        } else if (effectiveFormat == '12h') {
-          final ampm = hour >= 12 ? 'PM' : 'AM';
-          final h12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-          hourLabel = showSeconds ? '$h12:00:00 $ampm' : '$h12:00 $ampm';
-        } else {
-          hourLabel = showSeconds
-              ? '${hour.toString().padLeft(2, '0')}:00:00'
-              : '${hour.toString().padLeft(2, '0')}:00';
-        }
-
-        final isDaylight = hour >= sunriseHour && hour < sunriseHour + 12;
-        final icon = showDayNight
-            ? (isDaylight ? Icons.wb_sunny : Icons.nightlight_round)
-            : Icons.circle;
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 4),
-          child: Column(
-            children: [
-              Row(children: [
-                if (showDayNight) Icon(icon, size: 16, color: Colors.grey),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    hourLabel,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  Color.lerp(accent, const Color(0xFF0B1020), 0.72) ?? accent,
+                  const Color(0xFF0B1020)
+                ]
+              : [accent, Color.lerp(accent, Colors.black, 0.32) ?? accent],
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(26),
+          bottomRight: Radius.circular(26),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 6, 14, 18),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.arrow_back, color: fg),
+                  visualDensity: VisualDensity.compact,
+                ),
+                const Spacer(),
+                if (isToday) _pill(tr(context, 'Today'), fg),
+                const SizedBox(width: 6),
+                _glassIcon(
+                  icon: Icons.today,
+                  onTap: () => _jumpTo(DateTime.now()),
+                  fg: fg,
+                ),
+                const SizedBox(width: 6),
+                _glassIcon(
+                  icon: Icons.swap_horiz,
+                  fg: fg,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            EquivalentsPage(initialDate: _currentDate)),
                   ),
                 ),
-              ]),
-              if (hourEvents.isNotEmpty)
-                ...hourEvents.map((event) => _TimelineItem(
-                      event: event,
-                      timeDisplay: event.isAllDay
-                          ? tr(context, 'All day')
-                          : '${_formatEventTime(event.time, effectiveFormat, showSeconds, sunriseHour)} – '
-                              '${_formatEventTime(_eventEndTime(event), effectiveFormat, showSeconds, sunriseHour)}',
-                      secondaryTimeDisplay: _formatEventTime(
-                          event.time, cal.timeFormat, showSeconds, sunriseHour),
-                      isFirst: hourEvents.first.id == event.id,
-                      isLast: hourEvents.last.id == event.id,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => EventDetailPage(event: event)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                DateFormat('EEEE', locale).format(_currentDate).toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: fg.withValues(alpha: 0.82),
+                  fontSize: 11,
+                  letterSpacing: 2.2,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$dayNumber',
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 60,
+                      height: 1,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1.5,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            monthName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: fg,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w700,
+                              height: 1.15,
+                            ),
+                          ),
+                          Text(
+                            '$yearNumber',
+                            style: TextStyle(
+                              color: fg.withValues(alpha: 0.7),
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
                       ),
-                    )),
-            ],
-          ),
-        );
-      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Wrap(
+                spacing: 7,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _metaChip(
+                    Icons.event_note,
+                    '$eventCount ${eventCount == 1 ? tr(context, 'Event') : tr(context, 'Events')}',
+                    fg,
+                  ),
+                  if (secondaryCal != null)
+                    _metaChip(
+                      Icons.sync_alt,
+                      () {
+                        final s = CalendarMath.getCalendarDateInfo(
+                            secondaryCal, _currentDate);
+                        return '${s['day']} ${s['monthName']} ${s['year']}';
+                      }(),
+                      fg,
+                    ),
+                  ...specials.take(2).map(
+                        (sd) => _metaChip(Icons.star_outline, sd.name, fg),
+                      ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  String _eventEndTime(CalendarEvent event) {
-    final parts = event.time.split(':');
-    final start = DateTime(2000, 1, 1, int.tryParse(parts[0]) ?? 0,
-        parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0);
-    final end = start.add(Duration(minutes: event.durationMinutes));
-    return '${end.hour.toString().padLeft(2, '0')}:'
-        '${end.minute.toString().padLeft(2, '0')}';
+  Widget _pill(String text, Color fg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: fg.withValues(alpha: 0.18),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: fg.withValues(alpha: 0.35)),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: fg,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.3,
+          ),
+        ),
+      );
+
+  Widget _glassIcon({
+    required IconData icon,
+    required VoidCallback onTap,
+    required Color fg,
+  }) =>
+      Material(
+        color: fg.withValues(alpha: 0.16),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(icon, size: 17, color: fg),
+          ),
+        ),
+      );
+
+  Widget _metaChip(IconData icon, String label, Color fg) => ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          decoration: BoxDecoration(
+            color: fg.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 12, color: fg),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  // ── Day strip ────────────────────────────────────────────────────────
+
+  Widget _dayStrip(BuildContext context, String locale, Color accent) {
+    final today = _dateOnly(DateTime.now());
+
+    return SizedBox(
+      height: 76,
+      // Settle the strip back onto the selected day once a fling ends, so the
+      // strip never drifts away from the day being shown.
+      child: NotificationListener<ScrollEndNotification>(
+        onNotification: (_) {
+          _settleStrip();
+          return false;
+        },
+        child: ListView.builder(
+          controller: _stripController,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(
+              horizontal: _stripPadding, vertical: 6),
+          itemCount: _stripWindow * 2 + 1,
+          itemExtent: _stripTileWidth,
+          itemBuilder: (context, index) {
+            final date = today.add(Duration(days: index - _stripWindow));
+            final isSelected = date == _currentDate;
+            final isToday = date == today;
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _jumpTo(date);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: isSelected ? accent : Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isToday && !isSelected
+                        ? accent.withValues(alpha: 0.55)
+                        : Colors.transparent,
+                    width: 1.3,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      DateFormat('EEE', locale).format(date).toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.clip,
+                      style: TextStyle(
+                        fontSize: 8.5,
+                        letterSpacing: 0.6,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? Colors.white70
+                            : Theme.of(context).textTheme.bodySmall?.color,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${date.day}',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        height: 1.05,
+                        color: isSelected
+                            ? Colors.white
+                            : isToday
+                                ? accent
+                                : Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
-  String _formatEventTime(
-      String timeStr, String format, bool showSeconds, int sunriseHour) {
-    final parts = timeStr.split(':');
-    if (parts.length != 2) return timeStr;
-    final hour = int.parse(parts[0]);
-    final minute = int.parse(parts[1]);
-    if (format == 'biblical') {
-      return CalendarMath.getBiblicalTime(hour, minute,
-          sunriseHour: sunriseHour);
-    } else if (format == '12h') {
-      final ampm = hour >= 12 ? 'PM' : 'AM';
-      final h12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-      String result = '$h12:${minute.toString().padLeft(2, '0')}';
-      if (showSeconds) result += ':00';
-      return '$result $ampm';
-    } else {
-      String result =
-          '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-      if (showSeconds) result += ':00';
-      return result;
-    }
-  }
-}
+  Widget _sectionLabel(BuildContext context, String label) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+        child: Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.6,
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
+        ),
+      );
 
-class _TimelineItem extends StatelessWidget {
-  final CalendarEvent event;
-  final String timeDisplay;
-  final String? secondaryTimeDisplay;
-  final bool isFirst;
-  final bool isLast;
-  final VoidCallback? onTap;
+  // ── All day ──────────────────────────────────────────────────────────
 
-  const _TimelineItem({
-    required this.event,
-    required this.timeDisplay,
-    this.secondaryTimeDisplay,
-    required this.isFirst,
-    required this.isLast,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _allDaySection(
+      BuildContext context, List<CalendarEvent> events, Color accent) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: events
+            .map((event) => Material(
+                  color: event.color.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => EventDetailPage(event: event)),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 11, vertical: 7),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.bolt, size: 13, color: event.color),
+                          const SizedBox(width: 5),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 190),
+                            child: Text(
+                              event.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: event.color,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ))
+            .toList(),
+      ),
+    );
+  }
+
+  // ── Timeline ─────────────────────────────────────────────────────────
+
+  Widget _timelineRow(
+    BuildContext context,
+    CalendarProvider provider,
+    CalendarModel? cal,
+    CalendarEvent event,
+    String locale,
+    Color accent,
+  ) {
+    final format = cal == null ? '24h' : provider.getEffectiveTimeFormat(cal);
+    final showSeconds = provider.showSeconds;
+    final sunrise = provider.sunriseHour;
+    final start = _formatTime(event.time, format, showSeconds, sunrise);
+    final end = _formatTime(_endTime(event), format, showSeconds, sunrise);
+    final native =
+        _formatTime(event.time, cal?.timeFormat ?? '24h', false, sunrise);
+    final hour = CalendarMath.getHourFromTimeString(event.time);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 9),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 96,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  timeDisplay,
-                  textAlign: TextAlign.right,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70
-                        : Colors.black54,
-                  ),
-                ),
-                if (secondaryTimeDisplay != null)
+            width: 58,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
                   Text(
-                    secondaryTimeDisplay!,
-                    textAlign: TextAlign.right,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 9,
-                        color: Colors.grey,
-                        fontStyle: FontStyle.italic),
+                    _hourLabel(hour, format, sunrise),
+                    maxLines: 1,
+                    overflow: TextOverflow.clip,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: accent,
+                    ),
                   ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Card(
-              margin: EdgeInsets.zero,
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: onTap,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(children: [
-                    Container(
-                      width: 4,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: event.color,
-                        borderRadius: BorderRadius.circular(2),
+                  if (provider.showDayNight)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(
+                        hour >= sunrise && hour < sunrise + 12
+                            ? Icons.wb_sunny_outlined
+                            : Icons.nightlight_outlined,
+                        size: 11,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Material(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(15),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(15),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => EventDetailPage(event: event)),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    border:
+                        Border(left: BorderSide(color: event.color, width: 4)),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Text(event.title,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15)),
-                          if (event.notes.isNotEmpty)
-                            Text(
-                              event.notes,
-                              maxLines: 2,
+                          Expanded(
+                            child: Text(
+                              event.title,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  color: Colors.grey, fontSize: 13),
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          if (event.reminderMinutesBefore != null)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 6),
+                              child: Icon(
+                                Icons.notifications_active_outlined,
+                                size: 13,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.color,
+                              ),
                             ),
                         ],
                       ),
-                    ),
-                  ]),
+                      const SizedBox(height: 3),
+                      Text(
+                        '$start — $end',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: accent,
+                        ),
+                      ),
+                      if (cal != null && cal.timeFormat != format)
+                        Text(
+                          native,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontStyle: FontStyle.italic,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
+                        ),
+                      if (event.notes.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          event.notes,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            height: 1.35,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -454,4 +794,125 @@ class _TimelineItem extends StatelessWidget {
       ),
     );
   }
+
+  Widget _emptyState(BuildContext context, Color accent) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 32, 32, 32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.wb_sunny_outlined, size: 32, color: accent),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            tr(context, 'Nothing scheduled'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            tr(context, 'A free day. Add an event to make it count.'),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.4,
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────
+
+  Color _hexColor(String hex) {
+    try {
+      final cleaned = hex.replaceFirst('#', '');
+      if (cleaned.length != 6) return const Color(0xFF8B82FF);
+      return Color(int.parse('FF$cleaned', radix: 16));
+    } catch (_) {
+      return const Color(0xFF8B82FF);
+    }
+  }
+
+  String _hourLabel(int hour, String format, int sunriseHour) {
+    if (format == 'biblical') {
+      return CalendarMath.getBiblicalTime(hour, 0, sunriseHour: sunriseHour)
+          .split('(')
+          .first
+          .trim();
+    }
+    if (format == '12h') {
+      final ampm = hour >= 12 ? 'PM' : 'AM';
+      final h12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      return '$h12 $ampm';
+    }
+    return '${hour.toString().padLeft(2, '0')}:00';
+  }
+
+  String _endTime(CalendarEvent event) {
+    final parts = event.time.split(':');
+    final start = DateTime(2000, 1, 1, int.tryParse(parts[0]) ?? 0,
+        parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0);
+    final end = start.add(Duration(minutes: event.durationMinutes));
+    return '${end.hour.toString().padLeft(2, '0')}:'
+        '${end.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatTime(
+      String timeStr, String format, bool showSeconds, int sunriseHour) {
+    final parts = timeStr.split(':');
+    if (parts.length != 2) return timeStr;
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+    if (format == 'biblical') {
+      return CalendarMath.getBiblicalTime(hour, minute,
+          sunriseHour: sunriseHour);
+    }
+    if (format == '12h') {
+      final ampm = hour >= 12 ? 'PM' : 'AM';
+      final h12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      final sec = showSeconds ? ':00' : '';
+      return '$h12:${minute.toString().padLeft(2, '0')}$sec $ampm';
+    }
+    final sec = showSeconds ? ':00' : '';
+    return '${hour.toString().padLeft(2, '0')}:'
+        '${minute.toString().padLeft(2, '0')}$sec';
+  }
+}
+
+/// Pins the day strip under the hero while the agenda scrolls.
+class _StripHeader extends SliverPersistentHeaderDelegate {
+  final double height;
+  final Color background;
+  final Widget child;
+
+  const _StripHeader({
+    required this.height,
+    required this.background,
+    required this.child,
+  });
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(color: background, child: child);
+  }
+
+  @override
+  bool shouldRebuild(covariant _StripHeader oldDelegate) =>
+      oldDelegate.child != child || oldDelegate.background != background;
 }

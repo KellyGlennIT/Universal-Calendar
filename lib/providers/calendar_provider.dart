@@ -26,6 +26,7 @@ class CalendarProvider extends ChangeNotifier {
   bool _showSeconds = false;
   bool _showDayNight = true;
   int _sunriseHour = 6;
+  String _defaultReminderSound = 'default';
 
   List<CalendarModel> get calendars => _calendars;
   List<CalendarEvent> get events => _events;
@@ -42,6 +43,7 @@ class CalendarProvider extends ChangeNotifier {
   bool get showSeconds => _showSeconds;
   bool get showDayNight => _showDayNight;
   int get sunriseHour => _sunriseHour;
+  String get defaultReminderSound => _defaultReminderSound;
 
   CalendarModel? get selectedCalendar {
     for (final c in _calendars) {
@@ -62,7 +64,8 @@ class CalendarProvider extends ChangeNotifier {
     return _events
         .where((e) =>
             e.date == dateStr &&
-            (_selectedCalendarId.isEmpty || e.calendarId == _selectedCalendarId))
+            (_selectedCalendarId.isEmpty ||
+                e.calendarId == _selectedCalendarId))
         .toList()
       ..sort((a, b) => a.time.compareTo(b.time));
   }
@@ -92,6 +95,7 @@ class CalendarProvider extends ChangeNotifier {
         _calendars = (json.decode(calendarsJson) as List)
             .map((e) => CalendarModel.fromJson(e))
             .toList();
+        _migrateWeekStart();
       } else {
         _loadDefaultCalendars();
       }
@@ -107,6 +111,8 @@ class CalendarProvider extends ChangeNotifier {
       _showSeconds = prefs.getBool('show_seconds') ?? false;
       _showDayNight = prefs.getBool('show_day_night') ?? true;
       _sunriseHour = prefs.getInt('sunrise_hour') ?? 6;
+      _defaultReminderSound =
+          prefs.getString('default_reminder_sound') ?? 'default';
       if (_primaryCalendarId.isNotEmpty &&
           _calendars.any((c) => c.id == _primaryCalendarId)) {
         _selectedCalendarId = _primaryCalendarId;
@@ -128,6 +134,17 @@ class CalendarProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// One-time migration: Gregorian calendars used to start the week on
+  /// Monday. They now follow the familiar Sunday-first layout, so saved
+  /// calendars are flipped unless the user had chosen another start day.
+  void _migrateWeekStart() {
+    for (final cal in _calendars) {
+      if (cal.calendarType == 'gregorian' && cal.weekStartDay == 'Monday') {
+        cal.weekStartDay = 'Sunday';
+      }
+    }
+  }
+
   void _loadDefaultCalendars() {
     _calendars = [
       CalendarModel(
@@ -138,15 +155,37 @@ class CalendarProvider extends ChangeNotifier {
         weeksPerMonth: 4,
         monthsPerYear: 12,
         monthNames: const [
-          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
         ],
         yearStart: CalendarMath.formatDate(DateTime.now(), 'YYYY-MM-DD'),
         timeFormat: '24h',
         dateFormat: 'DD/MM/YYYY',
         calendarType: 'gregorian',
+        weekStartDay: 'Sunday',
         monthLengths: const [
-          31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+          31,
+          28,
+          31,
+          30,
+          31,
+          30,
+          31,
+          31,
+          30,
+          31,
+          30,
+          31,
         ],
         yearOffset: 0,
         colorHex: '#4DABF7',
@@ -160,8 +199,18 @@ class CalendarProvider extends ChangeNotifier {
         weeksPerMonth: 4,
         monthsPerYear: 13,
         monthNames: const [
-          'Meskerem', 'Tikimt', 'Hedar', 'Tahsas', 'Tir', 'Yekatit',
-          'Megabit', 'Miazia', 'Genbot', 'Sene', 'Hamle', 'Nehase',
+          'Meskerem',
+          'Tikimt',
+          'Hedar',
+          'Tahsas',
+          'Tir',
+          'Yekatit',
+          'Megabit',
+          'Miazia',
+          'Genbot',
+          'Sene',
+          'Hamle',
+          'Nehase',
           'Pagume',
         ],
         yearStart: CalendarMath.formatDate(
@@ -171,7 +220,19 @@ class CalendarProvider extends ChangeNotifier {
         calendarType: 'ethiopian',
         weekStartDay: 'Sunday',
         monthLengths: const [
-          30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 5,
+          30,
+          30,
+          30,
+          30,
+          30,
+          30,
+          30,
+          30,
+          30,
+          30,
+          30,
+          30,
+          5,
         ],
         yearOffset: -8,
         colorHex: '#51CF66',
@@ -185,8 +246,18 @@ class CalendarProvider extends ChangeNotifier {
         weeksPerMonth: 4,
         monthsPerYear: 12,
         monthNames: const [
-          'Tishri', 'Cheshvan', 'Kislev', 'Tevet', 'Shevat', 'Adar',
-          'Nisan', 'Iyar', 'Sivan', 'Tammuz', 'Av', 'Elul',
+          'Tishri',
+          'Cheshvan',
+          'Kislev',
+          'Tevet',
+          'Shevat',
+          'Adar',
+          'Nisan',
+          'Iyar',
+          'Sivan',
+          'Tammuz',
+          'Av',
+          'Elul',
         ],
         yearStart: CalendarMath.formatDate(
             DateTime(DateTime.now().year, 9, 16), 'YYYY-MM-DD'),
@@ -229,6 +300,7 @@ class CalendarProvider extends ChangeNotifier {
       await prefs.setBool('show_seconds', _showSeconds);
       await prefs.setBool('show_day_night', _showDayNight);
       await prefs.setInt('sunrise_hour', _sunriseHour);
+      await prefs.setString('default_reminder_sound', _defaultReminderSound);
     } catch (e) {
       debugPrint('Save error: $e');
     }
@@ -476,6 +548,12 @@ class CalendarProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setDefaultReminderSound(String toneId) async {
+    _defaultReminderSound = toneId;
+    _saveData();
+    notifyListeners();
+  }
+
   String getEffectiveTimeFormat(CalendarModel cal) =>
       _globalTimeFormat ?? cal.timeFormat;
 
@@ -505,6 +583,7 @@ class CalendarProvider extends ChangeNotifier {
           'show_seconds': _showSeconds,
           'show_day_night': _showDayNight,
           'sunrise_hour': _sunriseHour,
+          'default_reminder_sound': _defaultReminderSound,
         },
       };
 
@@ -516,7 +595,8 @@ class CalendarProvider extends ChangeNotifier {
       if (calendarsRaw.isEmpty) return false;
 
       final newCalendars = calendarsRaw
-          .map((e) => CalendarModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              CalendarModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
       final newEvents = eventsRaw
           .map((e) =>
@@ -539,6 +619,8 @@ class CalendarProvider extends ChangeNotifier {
       _showSeconds = (settingsMap['show_seconds'] as bool?) ?? false;
       _showDayNight = (settingsMap['show_day_night'] as bool?) ?? true;
       _sunriseHour = (settingsMap['sunrise_hour'] as int?) ?? 6;
+      _defaultReminderSound =
+          (settingsMap['default_reminder_sound'] as String?) ?? 'default';
 
       if (_primaryCalendarId.isEmpty ||
           !_calendars.any((c) => c.id == _primaryCalendarId)) {
