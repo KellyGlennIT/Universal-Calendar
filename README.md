@@ -356,4 +356,10 @@ The following commands were run in this environment and are confirmed passing:
 
 ## License
 
-License not yet assigned. Add a `LICENSE` file and reference it here before distributing.
+License
+
+Universal Calendar is free and open-source software licensed under the GNU General Public License v3.0 (GPL-3.0).
+
+You are free to use, study, modify, and distribute this software under the terms of the license.
+
+See the "LICENSE" (LICENSE) file for the complete license terms.
