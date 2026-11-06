@@ -398,18 +398,4 @@ The day view is tuned for mid-range phones:
 
 ## License
 
-Universal Calendar is **free and open-source software**, released under the
-**[GNU Affero General Public License v3.0](LICENSE)** (AGPL-3.0).
-
-In short:
-
-- ✅ You may **use, study, modify and redistribute** this software, including commercially.
-- ✅ You may **distribute modified versions**, provided you keep them under the same license.
-- 🔒 **The code must remain open source.** Any distributed version — modified or not — must be licensed under the AGPL-3.0 and its complete corresponding source code must be made available to recipients.
-- 🌐 **Network use counts as distribution.** If you run a modified version as a network service, you must offer the source code of that modified version to the users of the service (AGPL §13).
-- 📄 You must keep the copyright notices and the license text intact, and state clearly which changes you made.
-- ⚠️ The software is provided **without any warranty**, as described in sections 15 and 16 of the license.
-
-See the full text in [`LICENSE`](LICENSE) or at <https://www.gnu.org/licenses/agpl-3.0.html>.
-
-Third-party packages keep their own licenses — see `pubspec.lock` and each package's repository.
+License not yet assigned. Add a `LICENSE` file and reference it here before distributing.
