@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -18,7 +19,7 @@ class CalendarNotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static const String _channelBaseId = 'uc_calendar_alerts_v7';
+  static const String _channelBaseId = 'uc_calendar_alerts_v6';
   static int _testSeq = 9000;
   static const int _maxOccurrences = 100;
   static const int _escalationCount = 4;
@@ -52,6 +53,17 @@ class CalendarNotificationService {
     return channel;
   }
 
+  /// Silent "Stop" action — cancels the notification without opening the app.
+  /// Localized so French users see "Arrêter" instead of "Stop".
+  static List<AndroidNotificationAction> _stopActions(bool isFrench) => [
+        AndroidNotificationAction(
+          'stop_reminder',
+          isFrench ? 'Arrêter' : 'Stop',
+          showsUserInterface: false,
+          cancelNotification: true,
+        ),
+      ];
+
   static Future<void> initialize() async {
     if (kIsWeb) return;
     tz_data.initializeTimeZones();
@@ -73,9 +85,7 @@ class CalendarNotificationService {
     await _plugin.initialize(
       const InitializationSettings(android: android, iOS: ios),
       onDidReceiveNotificationResponse: (response) {
-        if (response.payload != null && response.payload!.isNotEmpty) {
-          pendingNotificationEventId.value = response.payload;
-        }
+        unawaited(_handleNotificationInteraction(response));
       },
     );
     await _ensureChannel(null);
@@ -86,6 +96,25 @@ class CalendarNotificationService {
       if (payload != null && payload.isNotEmpty) {
         pendingNotificationEventId.value = payload;
       }
+    }
+  }
+
+  static Future<void> _handleNotificationInteraction(
+      NotificationResponse response) async {
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return;
+
+    // Cancel every pending ring for this event regardless of which action
+    // the user tapped.
+    try {
+      await cancelEvent(payload);
+    } catch (error) {
+      debugPrint('Could not cancel rings after tap: $error');
+    }
+
+    // Only navigate when the user tapped the body, not the "Stop" action.
+    if (response.actionId != 'stop_reminder') {
+      pendingNotificationEventId.value = payload;
     }
   }
 
@@ -188,6 +217,9 @@ class CalendarNotificationService {
     return hash == 0 ? 1 : hash;
   }
 
+  /// Cancels the base notification, every bounded-repeat slot, and every
+  /// escalation ring for [eventId]. Works whether the notification is
+  /// displayed or still scheduled.
   static Future<void> cancelEvent(String eventId) async {
     if (kIsWeb) return;
     try {
@@ -260,7 +292,12 @@ class CalendarNotificationService {
       final canEscalate =
           event.escalatingReminder && event.repeatMode == 'once';
 
-      final baseDetails = NotificationDetails(
+      // Group key collapses all rings for this event into ONE group in the
+      // tray — user sees 1 collapsed entry instead of 5 stacked ones.
+      final groupKey = 'uc_reminder_${event.id}';
+      final actions = _stopActions(isFrench);
+
+      final primaryDetails = NotificationDetails(
         android: AndroidNotificationDetails(
           channel.id,
           channel.name,
@@ -275,8 +312,35 @@ class CalendarNotificationService {
           fullScreenIntent: event.alarmStyle,
           ticker: 'Calendar reminder',
           visibility: NotificationVisibility.public,
-          additionalFlags:
-              canEscalate ? Int32List.fromList(<int>[4]) : null,
+          actions: actions,
+          groupKey: groupKey,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: true,
+          sound: iosSoundFor(event.reminderSound),
+          presentBadge: true,
+          interruptionLevel: InterruptionLevel.timeSensitive,
+        ),
+      );
+
+      final escalationDetails = NotificationDetails(
+        android: AndroidNotificationDetails(
+          channel.id,
+          channel.name,
+          channelDescription: channel.description,
+          importance: channel.importance,
+          priority: Priority.max,
+          playSound: true,
+          sound: channel.sound,
+          enableVibration: true,
+          category: AndroidNotificationCategory.alarm,
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+          fullScreenIntent: false,
+          ticker: 'Calendar reminder',
+          visibility: NotificationVisibility.public,
+          actions: actions,
+          groupKey: groupKey,
         ),
         iOS: DarwinNotificationDetails(
           presentAlert: true,
@@ -294,7 +358,7 @@ class CalendarNotificationService {
           event.title,
           body,
           tz.TZDateTime.from(firstReminder, tz.local),
-          baseDetails,
+          primaryDetails,
           androidScheduleMode: scheduleMode,
           payload: event.id,
         );
@@ -306,7 +370,7 @@ class CalendarNotificationService {
           event.title,
           body,
           tz.TZDateTime.from(next, tz.local),
-          baseDetails,
+          primaryDetails,
           androidScheduleMode: scheduleMode,
           matchDateTimeComponents: event.repeatMode == 'daily'
               ? DateTimeComponents.time
@@ -327,7 +391,7 @@ class CalendarNotificationService {
               event.title,
               body,
               tz.TZDateTime.from(cursor, tz.local),
-              baseDetails,
+              primaryDetails,
               androidScheduleMode: scheduleMode,
               payload: event.id,
             );
@@ -347,7 +411,7 @@ class CalendarNotificationService {
             event.title,
             body,
             tz.TZDateTime.from(escalateAt, tz.local),
-            baseDetails,
+            escalationDetails,
             androidScheduleMode: scheduleMode,
             payload: event.id,
           );

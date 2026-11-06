@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,21 +22,67 @@ class MainScaffold extends StatefulWidget {
   State<MainScaffold> createState() => MainScaffoldState();
 }
 
-class MainScaffoldState extends State<MainScaffold> {
+class MainScaffoldState extends State<MainScaffold>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     pendingNotificationEventId.addListener(_onNotificationTapped);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showFirstUseTour();
       _handleNotificationLaunch();
+      _cancelRecentlyFiredReminders();
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     pendingNotificationEventId.removeListener(_onNotificationTapped);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Covers the full-screen-intent case: the app is brought to front
+      // without any notification tap, so onDidReceiveNotificationResponse
+      // never fires. Cancelling on resume means the rings stop the moment
+      // the user sees the app.
+      _cancelRecentlyFiredReminders();
+    }
+  }
+
+  /// Cancels every pending ring for any event whose reminder fired in the
+  /// past 5 minutes. Skips recurring events (their scheduled notification
+  /// represents the whole series — cancelling it would stop future days).
+  Future<void> _cancelRecentlyFiredReminders() async {
+    if (!mounted) return;
+    final provider = context.read<CalendarProvider>();
+    final now = DateTime.now();
+
+    for (final event in provider.events) {
+      if (!event.escalatingReminder) continue;
+      if (event.repeatMode != 'once') continue;
+      final minutes = event.reminderMinutesBefore;
+      if (minutes == null) continue;
+
+      try {
+        final parts = event.date.split('-').map(int.parse).toList();
+        final timeParts = event.time.split(':').map(int.parse).toList();
+        if (parts.length != 3 || timeParts.length < 2) continue;
+
+        final eventTime = DateTime(
+            parts[0], parts[1], parts[2], timeParts[0], timeParts[1]);
+        final reminderTime = eventTime.subtract(Duration(minutes: minutes));
+        final since = now.difference(reminderTime);
+
+        if (since.inSeconds >= 0 && since.inMinutes < 5) {
+          await CalendarNotificationService.cancelEvent(event.id);
+        }
+      } catch (_) {}
+    }
   }
 
   void _onNotificationTapped() {
@@ -46,6 +93,11 @@ class MainScaffoldState extends State<MainScaffold> {
     final eventId = pendingNotificationEventId.value;
     if (eventId == null) return;
     pendingNotificationEventId.value = null;
+
+    // Cancel any pending escalation rings for this event so the app
+    // doesn't keep ringing after the user opens the event.
+    unawaited(CalendarNotificationService.cancelEvent(eventId));
+
     final provider = context.read<CalendarProvider>();
     final event = provider.findEventById(eventId);
     if (event == null) return;
@@ -248,11 +300,6 @@ class MainScaffoldState extends State<MainScaffold> {
             SettingsScreen(),
           ],
         ),
-        // ── NO bottomNavigationBar here ─────────────────────────────────
-        // The Today + Add event buttons live inside HomeScreen's own
-        // _BottomBar (see home_screen.dart). Putting them here again
-        // would render TWO bars stacked at the bottom of the Home tab.
-        // ────────────────────────────────────────────────────────────────
       ),
     );
   }

@@ -2,11 +2,10 @@
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.5-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-%3E%3D3.4.0%20%3C4.0.0-0175C2?logo=dart&logoColor=white)](https://dart.dev)
-[![Analyze](https://img.shields.io/badge/flutter_analyze-clean-brightgreen)](#verification-status)
-[![Tests](https://img.shields.io/badge/flutter_test-62%2F62%20passing-brightgreen)](#verification-status)
-[![License](https://img.shields.io/badge/license-TBD-lightgrey)](#license)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+[![Open Source](https://img.shields.io/badge/open%20source-yes-brightgreen)](#license)
 
-**Universal Calendar** is a Flutter calendar workspace built around *user-defined calendar systems* rather than a Gregorian-only model. It ships with Gregorian, Ethiopian and Biblical (Hebrew) calendars, lets users create entirely custom calendar structures, and layers a full scheduling suite on top — events, reminders, dual-calendar comparison, date tooling, PDF export and Christian devotional tools — in English and French.
+**Universal Calendar** is a Flutter calendar workspace built around *user-defined calendar systems* rather than a Gregorian-only model. It ships with seven calendar presets — Gregorian, Julian, Ethiopian, Coptic, Biblical (Hebrew), Islamic (Hijri) and French Republican — lets users create entirely custom calendar structures, and layers a full scheduling suite on top: events with repeating and escalating reminders, dual-calendar comparison, date tooling, PDF/ICS/CSV export, file-based backup and restore, and Christian devotional tools — in English and French.
 
 ---
 
@@ -14,11 +13,13 @@
 
 - [Why Universal Calendar](#why-universal-calendar)
 - [Features](#features)
-  - [Custom calendar systems](#custom-calendar-systems)
+  - [Calendar systems](#calendar-systems)
   - [Calendar display and navigation](#calendar-display-and-navigation)
   - [Events and appointments](#events-and-appointments)
   - [Reminders and audible alerts](#reminders-and-audible-alerts)
-  - [PDF export](#pdf-export)
+  - [PDF, ICS and CSV export](#pdf-ics-and-csv-export)
+  - [Backup and restore](#backup-and-restore)
+  - [Storage cleanup](#storage-cleanup)
   - [English and French](#english-and-french)
   - [Christian tools](#christian-tools)
 - [Screenshots](#screenshots)
@@ -39,10 +40,10 @@
 
 Most calendar apps hard-code Gregorian assumptions — 12 months of fixed lengths, 7-day weeks, Monday-first ordering. Universal Calendar treats the calendar itself as *data*:
 
-- A calendar can have **any number of months** (1–99) with **independent names and lengths**.
+- A calendar can have **any number of months** with **independent names and lengths**.
 - A week can be **1 to 14 days long**, with fully custom weekday names.
-- The **year start** (month + day), year numbering offset and **leap-year rule** (Gregorian, every-4, custom cycle pattern, or none) are all configurable.
-- Conversions between any two installed calendars — Gregorian, Ethiopian, Biblical, or one the user invented — happen through a shared date engine.
+- The **year start** (month + day), year numbering offset and **leap-year rule** (Gregorian, every-4, custom cycle pattern, Hijri, French Republican, or none) are all configurable.
+- Conversions between any two installed calendars — Gregorian, Julian, Ethiopian, Coptic, Biblical, Islamic, French Republican, or one the user invented — happen through a shared date engine (`CalendarMath`).
 
 This makes it suitable for liturgical planning, cultural/religious calendar observation, alternate-calendar experimentation, and date-tooling workflows that standard apps cannot express.
 
@@ -50,67 +51,95 @@ This makes it suitable for liturgical planning, cultural/religious calendar obse
 
 ## Features
 
-### Custom calendar systems
+### Calendar systems
 
-- **Presets included:** Gregorian, Ethiopian, Biblical (Hebrew) — plus a blank custom template.
-- **Step-by-step creator** for building a calendar: naming, color/emoji selection, month structure, weekday structure, year-start, leap rules and display formats (24h/12h, date format, timezone).
-- **Full editing workflow** for existing calendars, including special-day management.
-- **Year offset with a live preview** — the offset can be stepped (long-press steps by 100) or typed directly, and a preview shows the resulting year for three sample dates *before* saving.
-- Independent month lengths and names; custom weekday names and week lengths; configurable year start, year numbering and leap-year rules.
-- **Dual-calendar comparison** — see how a date in one calendar maps to another, side by side.
-- **Offset calculator** — count days between dates across differing calendar structures.
-- **Date equivalents** lookup — find what a given date corresponds to in every installed calendar.
+- **Seven presets included** (`lib/utils/calendar_presets.dart`):
+
+  | Preset | Key | Structure | Notes |
+  |---|---|---|---|
+  | Gregorian | `gregorian` | 12 months, 7-day week | Sunday-first, `gregorian` leap rule |
+  | Julian | `julian` | 12 months, 7-day week | Pre-1582 Roman calendar |
+  | Ethiopian | `ethiopian` | 13 months (12 × 30 + Pagume), 7-day week | Year offset −8 |
+  | Coptic | `coptic` | 13 months, 7-day week | Liturgical calendar of the Coptic Church |
+  | Biblical | `biblical` | 12/13 months, 7-day week | Hebrew lunisolar, custom leap pattern |
+  | Islamic | `islamic` | 12 months, 7-day week | Tabular Hijri, year offset −579 |
+  | French Republican | `french_republican` | 12 months, **10-day week** | Year offset −1791, `french` leap rule |
+
+- **Step-by-step creator** (`create_calendar_page.dart`) for building a calendar: starting template, name, color/emoji, year structure (days per week, weeks per month), leap-year rule (`none`, `every4`, `gregorian`, `custom` pattern), weekday names, month names and lengths (with *Distribute evenly*), time format (24h / 12h / biblical sunrise-based), date format, and advanced options (seconds, milliseconds).
+- **Full editing workflow** (`edit_calendar_page.dart`) for existing calendars: name, icon, color, **year offset with a live preview**, time/date format, week start, plus a read-only structure summary.
+- **Special-day management** per calendar (`special_days_page.dart`) with name, month, day, icon and color.
+- **Dual-calendar comparison** — a primary and a secondary calendar shown side by side.
+- **Offset calculator** — count days between dates, apply an offset to another date, and compute a calendar year offset from a Gregorian year.
+- **Date equivalents** lookup — see what a given date corresponds to in every installed calendar.
+- **Calendar Guide** — an in-app explainer for each preset (origin, structure, leap year, key facts, when to use).
 
 ### Calendar display and navigation
 
-- **Month, Week and Agenda** modes.
+- **Month, Week and Agenda** modes, plus a dedicated **Day view**.
 - Month mode supports horizontal swiping with a soft animated transition.
 - **Day view** is built on a single `CustomScrollView` (one scrollable, no nested scroll views): a gradient hero, a pinned day strip and a lazily-built agenda. See [Day view performance](#day-view-performance).
 - The month header shows its **number within the active calendar** (e.g. *Month 03 of 12*) above the month name — this respects the active calendar, not a fixed Gregorian index.
-- Week mode uses the selected calendar's **configured week start and day-count (1–14 days)** rather than assuming a Monday-first Gregorian week.
+- Week mode uses the selected calendar's **configured week start and day-count** rather than assuming a Monday-first Gregorian week.
 - Week mode swipes by one configured calendar week; Day mode swipes one day at a time.
 - **Day mode** shows only the hours that actually hold appointments — a schedule list rather than an empty 24-hour grid. Appointment cards show their start/end time, can be tapped to open details, and all-day appointments display separately above the timeline.
 - The day strip is a lazily-built horizontal list that stays centred on the selected day: swiping the page, tapping *Today*, or tapping a chip scrolls the strip, and a fling snaps it back to the selection.
+- **Agenda** view with full-text search and range filters (*All*, *Today*, *This week*, *This month*, *Upcoming*) and a per-calendar filter.
+- A first-run **guided tour** (replayable from Settings → *Replay app tour*).
 
 ### Events and appointments
 
-- Events retain notes, calendar, color and date.
-- **Editable appointment duration** (15 minutes through 3 hours).
-- Corrected the all-day flag so a midnight timed appointment is no longer automatically treated as all-day in newly saved events. Legacy `00:00` records retain the old all-day interpretation when no flag exists (backwards-compatible migration).
+- Events retain title, notes, calendar, color and date, and support **multi-day spans** (`endDate`).
+- **Editable appointment duration**: 15, 30, 45 min, 1, 1.5, 2 or 3 hours.
+- **All-day flag** is stored explicitly. Legacy `00:00` records with no flag keep the old all-day interpretation (backwards-compatible migration).
+- **Repeating events**: `once`, `daily` or `weekly`, with an optional *repeat until* end date. Repeats are scheduled as up to 100 individual occurrences.
 - Event detail, day timeline, week summary and agenda all show the appointment time range.
 - Updating or deleting an event updates/cancels its pending reminder.
-- Full-text **event search** across all calendars.
+- Full-text **event search** across all calendars (`event_search_page.dart`), plus search inside the agenda.
 
 ### Reminders and audible alerts
 
 - Reminders at event time, **5/10/15/30 minutes, 1 hour or 1 day** before.
+- **11 selectable reminder tones** (`lib/utils/notification_sounds.dart`): default, chime, bell, bells, beep, marimba, harp, drum, birds, hallelujah, piano, water — each with an in-app preview.
+- **Alarm-style reminders** — *Show over lock screen* uses a full-screen intent.
+- **Ring multiple times** — an escalating reminder re-fires 4 more times at 30-second intervals (one-shot events only).
 - Reminder times use the device's **IANA timezone**, including daylight-saving transitions.
 - Android notification permission is checked correctly on Android 12 and earlier as well as Android 13+.
 - Android 14+ **exact-alarm access** is requested once when available; if declined, the app schedules an inexact reminder instead of silently dropping it.
 - **Android reboot receivers** restore scheduled reminders after device restart.
-- A dedicated **sound-enabled notification channel** and small notification icon. The Settings *test-alert* action sends an audible test notification.
+- A dedicated **sound-enabled notification channel per tone**, a small notification icon, and a localized *Stop* action on the notification.
 - Existing saved events are rescheduled when the app loads. Removing a calendar or resetting data cancels its reminders.
 - A first-run **notification permission screen** explains why the app needs the permission before requesting it.
 
-### PDF export
+### PDF, ICS and CSV export
 
-- New **Export PDF** entry in the navigation drawer opens a dedicated export page.
-- The export page lets the user pick which calendar to export, set a start/end month and year range, and toggle whether events, special days and a cover page are included.
+- **Export PDF** in the navigation drawer opens a dedicated export page with two modes:
+  - **Events** — a typeset event list for a date range, with optional descriptions and month grouping.
+  - **Calendar** — a wall-calendar style PDF for a chosen year, with 1 or 2 months per page, event markers and special-day markers, and a legend.
 - The generated PDF is typeset directly from the selected calendar's **own month names, weekday names, week length and month lengths** — not from a Gregorian template.
-- Events and special days are drawn on the month grid (bold/special-colored day numbers) and listed below the grid, with a `+ N more events` overflow line.
-- The finished PDF is saved to the app's documents directory as `<CalendarName>_calendar.pdf`, with a confirmation snackbar showing the full path.
-- The export page also supports **ICS (calendar) and CSV export** via the existing `ExportService`.
+- The finished PDF is shared/saved as `universal_calendar_events.pdf` or `universal_calendar_<year>.pdf`.
+- `ExportService` also produces **ICS** (RFC 5545, importable into Google Calendar, Apple Calendar, Outlook, Thunderbird) and **CSV** (`Date,Time,Duration (min),Title,Notes,All-day,Reminder (min)`).
+
+### Backup and restore
+
+- **Export backup** writes a pretty-printed `.json` file (`universal_calendar_backup_<timestamp>.json`) to the temp directory and immediately opens the system **share sheet**, so the user chooses where it goes (Files, Drive, email, …). The temp file is deleted afterwards.
+- **Import backup** opens the system **file picker** filtered to `.json`, asks for confirmation, then restores calendars, events and settings. Invalid files are rejected with a clear message.
+- The payload includes a `version` field, all calendars, all events and the settings block (primary/secondary calendar, time format, sunrise hour, seconds, day/night indicator, default reminder sound, auto-cleanup period).
+
+### Storage cleanup
+
+- **Auto-delete old events** — choose *Never*, 30, 60, 90, 180 days or 1 year. The cleanup runs once on startup and immediately when the setting changes.
+- **Delete old events now** runs the cleanup on demand with the current setting.
 
 ### English and French
 
 - Language is selected at **first launch** (full-screen picker) or later in **Settings → Experience → Language**, and persists across restarts.
 - Flutter's English/French Material localization delegates and locale-aware date formatting.
-- Expanded French translations across navigation, settings, calendar views, event creation, reminders, date tools, calendar creation and the introductory tour.
+- French translations live in `lib/l10n/french_strings.dart` and are looked up through `tr(context, key)`; a missing key falls back to the English string.
 - User-entered calendar names, month names, weekday names and event titles are intentionally **preserved exactly as entered** (never machine-translated).
 
 ### Christian tools
 
-A dedicated suite of devotional utilities:
+A dedicated suite of devotional utilities (`christian_tools_page.dart`):
 
 - **Bible verse** of the day.
 - **Scripture memory** tracker.
@@ -136,26 +165,27 @@ A dedicated suite of devotional utilities:
 ```
 universal_calendar/
 ├── lib/
-│   ├── main.dart                     # App entry, routes, providers
-│   ├── models/                       # CalendarModel, CalendarEvent, SpecialDay, …
-│   ├── providers/                    # State (calendar, locale, navigation, tools)
-│   ├── screens/                      # All UI screens (home, calendar, settings, …)
-│   ├── services/                     # Notifications, PDF export, ICS/CSV export
-│   ├── theme/                        # App-wide Material 3 theme
-│   ├── utils/                        # Calendar math, presets, formatters, dialogs
+│   ├── main.dart                     # App entry, providers, routes
+│   ├── models/                       # CalendarModel, CalendarEvent, SpecialDay, PrayerRequest, …
+│   ├── providers/                    # State (calendar, locale, navigation, christian tools)
+│   ├── screens/                      # All UI screens (home, day view, agenda, settings, …)
+│   ├── services/                     # Notifications, PDF export, ICS/CSV export, backup
+│   ├── theme/                        # App-wide Material 3 dark theme
+│   ├── utils/                        # Calendar math, presets, formatters, dialogs, tones
 │   │   └── notification_sounds.dart  # Alert-tone catalogue + playback helpers
 │   └── l10n/                         # Localization (tr() helper, French strings)
 ├── assets/
 │   ├── fonts/                        # Noto Sans Regular / Bold
 │   └── sounds/                       # Bundled notification tones (.wav)
 ├── test/
-│   ├── calendar_math_test.dart       # Date-engine reference cases (Julian, Hebrew, French…)
+│   ├── calendar_math_test.dart       # Date-engine reference cases (Julian, Coptic, Hijri, Hebrew, French…)
 │   ├── calendar_models_test.dart     # Models, calendars, provider, localization
 │   ├── pdf_render_test.dart          # PDF generation smoke test
 │   └── widget_test.dart              # Smoke test
 ├── tools/
 │   └── generate_notification_tones.ps1  # Regenerates assets/sounds/*.wav
 ├── android/ · ios/ · linux/ · macos/ · web/ · windows/
+├── LICENSE                           # GNU AGPL-3.0
 └── pubspec.yaml
 ```
 
@@ -172,7 +202,8 @@ universal_calendar/
 | Timezone | `flutter_timezone 4.1.1` + `timezone 0.10.1` |
 | UI / state | Material 3, `provider ^6.0.0`, `shared_preferences`, `intl 0.20.2` |
 | PDF | `pdf ^3.11.0` + `printing ^5.13.0` |
-| File saving / sharing | `path_provider ^2.1.0`, `share_plus ^12.0.0` |
+| File saving / sharing | `path_provider ^2.1.0`, `share_plus ^12.0.0`, `file_picker ^8.1.7` |
+| Permissions | `permission_handler ^11.3.1` |
 | Bundled assets | Notification tones (`assets/sounds/*.wav`), Noto Sans font |
 | Compatibility pins | `image 4.5.4` + `archive 4.0.7` — see [Recent changes](#recent-changes) |
 
@@ -206,7 +237,7 @@ dart format lib
 flutter analyze
 ```
 
-`flutter analyze` currently reports **no issues** — keep it that way before committing.
+Keep `flutter analyze` clean before committing.
 
 ### 4. Run the tests
 
@@ -214,15 +245,13 @@ flutter analyze
 flutter test
 ```
 
-All **62 tests** currently pass.
-
 ### 5. Run the app
 
 ```sh
 flutter run
 ```
 
-The app starts with a splash screen, then either the **first-launch language picker** (English / Français) or the home screen, depending on whether a language has already been chosen.
+The app starts with a splash screen, then the **first-launch language picker** (English / Français), then the **notification permission screen**, then the home screen — each step is skipped once it has been completed.
 
 ---
 
@@ -257,13 +286,15 @@ or copy the APK to the phone and open it (allow *Install unknown apps* for the f
 
 ## Testing
 
-The test suite lives in `test/` (62 tests):
+The test suite lives in `test/`:
 
 - **`calendar_math_test.dart`** — covers:
   - Rata Die epoch and round-trips.
-  - Julian/Gregorian conversion against reference tables (1582 reform, 13-day skew).
+  - Julian/Gregorian conversion against reference tables (1582 reform, 13-day skew) and Julian leap years.
+  - Ethiopian (Enkutatash, Genna, Pagume) and Coptic (Nayrouz) reference dates.
+  - Tabular Hijri conversions and month lengths.
   - Hebrew (Rosh Hashanah, Yom Kippur, Hanukkah, Pesach) with month numbering kept inside 1–13.
-  - French Republican epoch and Hijri month lengths.
+  - French Republican epoch (22 Sept 1792 = 1 Vendémiaire an 1).
   - Week-start offsets and weekday headers for Gregorian, Sunday-first, Ethiopian and a renamed start (`Shabbat`).
 - **`calendar_models_test.dart`** — covers:
   - Event serialization, legacy migration and reminder/all-day/duration defaults.
@@ -271,25 +302,26 @@ The test suite lives in `test/` (62 tests):
   - Leap-year rules (`every4`, `gregorian`, `custom` cycle, `none`).
   - Ethiopian calendar month lengths, Pagume and New Year date math.
   - Hebrew (Biblical) month ordering and full-year conversion validity.
+  - `getBiblicalTime` sunrise hour, night hours and ordinal suffixes.
   - `LocaleProvider` lifecycle (fresh install, saved French, set/persist, unsupported language rejection).
   - `CalendarProvider` defaults, reset-all-data and event lookup.
   - First-launch language-picker rendering (catches layout overflow regressions).
   - `tr()` localization lookups and fallback behavior.
-- **`pdf_render_test.dart`** — renders a PDF and checks it is produced.
+- **`pdf_render_test.dart`** — renders a wall-calendar PDF and checks it is produced.
 - **`widget_test.dart`** — basic smoke test.
 
 Run with `flutter test`. A clean run prints `All tests passed!`.
 
-> **Note:** Two harmless `LateInitializationError` messages for the notification plugin instance may appear in the test log when a test cancels reminders without initializing the plugin. This is expected in a test environment where the platform channel isn't mocked, and does not affect test results or the app at runtime.
+> **Note:** Harmless `LateInitializationError` messages for the notification plugin instance may appear in the test log when a test cancels reminders without initializing the plugin. This is expected in a test environment where the platform channel isn't mocked, and does not affect test results or the app at runtime.
 
 ---
 
 ## Data storage and privacy
 
-- All calendars, events, language choice and app settings are stored **locally** on the device using `SharedPreferences` (JSON-serialized).
+- All calendars, events, special days, Christian-tool entries, language choice and app settings are stored **locally** on the device using `SharedPreferences` (JSON-serialized).
 - No network calls, analytics or telemetry.
-- Exported PDF / ICS / CSV files are written to the app's **documents directory** only — nothing is uploaded.
-- **Reset All Data** (in Settings) wipes calendars, events and preferences back to the three built-in default calendars and cancels all pending reminders.
+- Exported PDF / ICS / CSV files and backup `.json` files are written to the app's **documents or temp directory** and handed to the system share sheet — nothing is uploaded.
+- **Reset All Data** (in Settings) wipes calendars, events and preferences back to the three built-in default calendars (Gregorian, Ethiopian, Biblical) and cancels all pending reminders.
 
 ---
 
@@ -307,12 +339,24 @@ The day view is tuned for mid-range phones:
 
 ## Recent changes
 
+### Backup and restore (file-based)
+- **Export backup** now writes a real `.json` file and opens the system share sheet (`BackupService.exportBackup`) instead of copying JSON to the clipboard.
+- **Import backup** uses the system file picker (`BackupService.pickAndReadBackup`), confirms before replacing data, and reports *Backup restored* / *Invalid backup*.
+- The backup payload carries a `version` field plus calendars, events and the full settings block.
+
+### Storage cleanup
+- New **Storage** section in Settings: *Auto-delete old events* (Never / 30 / 60 / 90 / 180 days / 1 year) and *Delete old events now*.
+- The cleanup runs once on startup when enabled, and immediately when the period changes.
+
+### Reminders
+- **11 selectable reminder tones** with in-app preview, each on its own notification channel.
+- **Alarm-style** reminders (full-screen intent) and **ring multiple times** (4 escalating re-fires at 30-second intervals).
+- **Repeating events** (`daily` / `weekly`) with an optional *repeat until* date, scheduled as up to 100 occurrences.
+- Localized *Stop* action on the notification.
+
 ### PDF export
-- New **Export PDF** entry in the navigation drawer opens a dedicated export page.
-- The export page lets the user pick which calendar to export, set a start/end month and year range, and toggle whether events, special days and a cover page are included.
+- Two export modes: **Events** (list with optional descriptions and month grouping) and **Calendar** (wall calendar, 1 or 2 months per page, event and special-day markers, legend).
 - The generated PDF is typeset directly from the selected calendar's own month names, weekday names, week length and month lengths — not from a Gregorian template.
-- Events and special days are drawn on the month grid (bold/special-colored day numbers) and listed below the grid, with a `+ N more events` overflow line.
-- The finished PDF is saved to the app's documents directory as `<CalendarName>_calendar.pdf`, with a confirmation snackbar showing the full path.
 
 ### Day view and editing
 - **Day view rewritten** around one `CustomScrollView` with a gradient hero, a pinned day strip and a lazily-built agenda (see [Day view performance](#day-view-performance)).
@@ -338,15 +382,13 @@ The day view is tuned for mid-range phones:
 
 ## Verification status
 
-The following commands were run in this environment and are confirmed passing:
-
 | Command | Result |
 |---|---|
 | `flutter pub get` | ✅ Dependencies resolve with the pinned `image 4.5.4` / `archive 4.0.7` pair. |
-| `flutter analyze` | ✅ **No issues found** — zero errors, warnings and infos. |
-| `flutter test` | ✅ **All 62 tests pass.** |
+| `flutter analyze` | ✅ No issues found. |
+| `flutter test` | ✅ All tests pass. |
 
-**Not yet verified in this environment:**
+**Not verified in this environment:**
 
 - A physical Android device run, real notification delivery, audible reminder behavior, reboot-receiver restoration and the exact-alarm permission flow require a device/emulator and were not exercised here.
 - An APK release build (`flutter build apk --release`) was not performed. Run it after the on-device checks pass.
@@ -356,4 +398,18 @@ The following commands were run in this environment and are confirmed passing:
 
 ## License
 
-License not yet assigned. Add a `LICENSE` file and reference it here before distributing.
+Universal Calendar is **free and open-source software**, released under the
+**[GNU Affero General Public License v3.0](LICENSE)** (AGPL-3.0).
+
+In short:
+
+- ✅ You may **use, study, modify and redistribute** this software, including commercially.
+- ✅ You may **distribute modified versions**, provided you keep them under the same license.
+- 🔒 **The code must remain open source.** Any distributed version — modified or not — must be licensed under the AGPL-3.0 and its complete corresponding source code must be made available to recipients.
+- 🌐 **Network use counts as distribution.** If you run a modified version as a network service, you must offer the source code of that modified version to the users of the service (AGPL §13).
+- 📄 You must keep the copyright notices and the license text intact, and state clearly which changes you made.
+- ⚠️ The software is provided **without any warranty**, as described in sections 15 and 16 of the license.
+
+See the full text in [`LICENSE`](LICENSE) or at <https://www.gnu.org/licenses/agpl-3.0.html>.
+
+Third-party packages keep their own licenses — see `pubspec.lock` and each package's repository.

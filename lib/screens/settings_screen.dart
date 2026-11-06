@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/locale_provider.dart';
+import '../services/backup_service.dart';
 import '../services/notification_service.dart';
 import '../utils/calendar_presets.dart';
 import '../l10n/tr.dart';
@@ -514,33 +513,37 @@ class SettingsScreen extends StatelessWidget {
                 ?.showFirstUseTour(force: true),
           ),
 
-          // ── Data ──────────────────────────────────────────────────────
+          // ── Data — NEW FILE-BASED BACKUP ──────────────────────────────
           _section(context, tr(context, 'Data')),
           _card(
             context,
-            icon: Icons.download_outlined,
-            title: tr(context, 'Backup All Data'),
+            icon: Icons.ios_share_rounded,
+            title: tr(context, 'Export backup'),
             subtitle: tr(context,
-                'Copy a full JSON backup to the clipboard'),
+                'Creates a .json file and opens the share sheet'),
             onTap: () async {
-              final payload = provider.getBackupPayload();
-              final text =
-                  const JsonEncoder.withIndent('  ').convert(payload);
-              await Clipboard.setData(ClipboardData(text: text));
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content:
-                    Text(tr(context, 'Backup copied to clipboard')),
-                duration: const Duration(seconds: 3),
-              ));
+              try {
+                final payload = provider.getBackupPayload();
+                await BackupService.exportBackup(
+                  payload,
+                  subject: tr(context, 'Universal Calendar backup'),
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('${tr(context, 'Export failed')}: $e'),
+                  behavior: SnackBarBehavior.floating,
+                ));
+              }
             },
           ),
           _card(
             context,
-            icon: Icons.upload_outlined,
-            title: tr(context, 'Restore from backup'),
-            subtitle: tr(context, 'Paste a JSON backup to restore'),
-            onTap: () => _showRestoreDialog(context, provider),
+            icon: Icons.file_open_rounded,
+            title: tr(context, 'Import backup'),
+            subtitle: tr(context,
+                'Picks a .json file and restores your calendars and events'),
+            onTap: () => _importBackup(context, provider),
           ),
           _card(
             context,
@@ -572,6 +575,53 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // ── Import backup from file ────────────────────────────────────────
+  Future<void> _importBackup(
+      BuildContext context, CalendarProvider provider) async {
+    // Confirm before wiping current data — restore replaces everything.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(tr(context, 'Restore from backup')),
+        content: Text(tr(context,
+            'This will replace all current calendars and events with the contents of the backup file. Continue?')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(tr(context, 'Cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(tr(context, 'Restore')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final payload = await BackupService.pickAndReadBackup();
+      if (payload == null) return; // user cancelled picker
+      if (!context.mounted) return;
+
+      final ok = await provider.restoreFromBackup(payload);
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ok
+            ? tr(context, 'Backup restored')
+            : tr(context, 'Invalid backup')),
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(tr(context, 'Invalid backup')),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
   }
 
   Color _hexToColor(String hex) {
@@ -631,68 +681,6 @@ class SettingsScreen extends StatelessWidget {
         subtitle: Text(subtitle),
         value: value,
         onChanged: onChanged,
-      ),
-    );
-  }
-
-  void _showRestoreDialog(
-      BuildContext context, CalendarProvider provider) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(tr(context, 'Restore from backup')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              tr(context, 'Paste the backup JSON here'),
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              maxLines: 8,
-              decoration: const InputDecoration(
-                hintText: '{ "calendars": [...], "events": [...] }',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(tr(context, 'Cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                final decoded = json.decode(controller.text);
-                if (decoded is! Map) {
-                  throw const FormatException('Not a JSON object');
-                }
-                final ok = await provider
-                    .restoreFromBackup(Map<String, dynamic>.from(decoded));
-                if (!dialogContext.mounted) return;
-                Navigator.pop(dialogContext);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(
-                    ok
-                        ? tr(context, 'Backup restored')
-                        : tr(context, 'Invalid backup'),
-                  ),
-                ));
-              } catch (_) {
-                if (!dialogContext.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(tr(context, 'Invalid backup')),
-                ));
-              }
-            },
-            child: Text(tr(context, 'Restore')),
-          ),
-        ],
       ),
     );
   }

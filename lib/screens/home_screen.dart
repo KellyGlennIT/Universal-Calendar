@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../models/calendar_model.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/calendar_math.dart';
@@ -12,6 +13,42 @@ import '../l10n/tr.dart';
 import 'add_event_page.dart';
 import 'day_view_page.dart';
 import 'equivalents_page.dart';
+
+/// Parses a week-start day name (`'Sunday'`, `'Sun'`, `'sunday'`, …) into
+/// its `DateTime.weekday` value (Monday=1 … Sunday=7).
+int _weekdayValueFromName(String name) {
+  final n = name.toLowerCase().trim();
+  if (n.startsWith('sun')) return DateTime.sunday;    // 7
+  if (n.startsWith('mon')) return DateTime.monday;    // 1
+  if (n.startsWith('tue')) return DateTime.tuesday;   // 2
+  if (n.startsWith('wed')) return DateTime.wednesday; // 3
+  if (n.startsWith('thu')) return DateTime.thursday;  // 4
+  if (n.startsWith('fri')) return DateTime.friday;    // 5
+  if (n.startsWith('sat')) return DateTime.saturday;  // 6
+  return DateTime.sunday; // safe default
+}
+
+/// Resolves the index of `cal.weekStartDay` inside `cal.dayNames` even when
+/// one uses short form (`'Sun'`) and the other uses full form (`'Sunday'`).
+int _resolveWeekStartIndex(CalendarModel cal) {
+  if (cal.dayNames.isEmpty) return 0;
+  final target = cal.weekStartDay.toLowerCase().trim();
+  if (target.isEmpty) return 0;
+
+  for (var i = 0; i < cal.dayNames.length; i++) {
+    if (cal.dayNames[i].toLowerCase() == target) return i;
+  }
+
+  if (target.length >= 3) {
+    final prefix = target.substring(0, 3);
+    for (var i = 0; i < cal.dayNames.length; i++) {
+      final n = cal.dayNames[i].toLowerCase();
+      if (n.length >= 3 && n.substring(0, 3) == prefix) return i;
+    }
+  }
+
+  return 0;
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -284,8 +321,7 @@ class _CalendarSelector extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(tr(context, 'Choose which calendar to display'),
-                style:
-                    const TextStyle(fontSize: 13, color: Colors.grey)),
+                style: const TextStyle(fontSize: 13, color: Colors.grey)),
             const Divider(),
             ...provider.calendars.map((cal) {
               final isSelected = cal.id == provider.selectedCalendarId;
@@ -551,11 +587,19 @@ class _WeekCalendarView extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
     final dayCount = cal.daysPerWeek.clamp(1, 14).toInt();
+
+    // ── Direct weekday arithmetic for 7-day calendars ─────────────────
+    // Uses the SAME formula as the monthly grid, so both views are
+    // guaranteed to agree on which day is the start of the week.
+    final weekStartValue = _weekdayValueFromName(cal.weekStartDay);
+    final daysBack = cal.daysPerWeek == 7
+        ? (selected.weekday - weekStartValue + 7) % 7
+        : CalendarMath.getWeekStartOffset(cal, selected);
+
     final first = DateTime(selected.year, selected.month, selected.day)
-        .subtract(Duration(
-            days: CalendarMath.getWeekStartOffset(cal, selected)));
-    final configuredStart = cal.dayNames.indexOf(cal.weekStartDay);
-    final startIndex = configuredStart < 0 ? 0 : configuredStart % dayCount;
+        .subtract(Duration(days: daysBack));
+    final configuredStart = _resolveWeekStartIndex(cal);
+    final startIndex = configuredStart % dayCount;
     final localeCode = context.watch<LocaleProvider>().languageCode;
 
     return GestureDetector(
@@ -912,12 +956,11 @@ class _CalendarGrid extends StatelessWidget {
         final dayOfMonth = currentDateInfo['day'] as int;
         final firstDayGreg =
             provider.anchorDate.subtract(Duration(days: dayOfMonth - 1));
-        final startOffset =
-            CalendarMath.getWeekStartOffset(cal, firstDayGreg);
         final daysInMonth = CalendarMath.getDaysInMonthForCalendar(
             cal, provider.currentYear, provider.currentMonth);
         final localeCode = context.watch<LocaleProvider>().languageCode;
         final dayCount = cal.daysPerWeek.clamp(1, 14).toInt();
+
         final useLocalized = cal.calendarType == 'gregorian' &&
             (listEquals(cal.dayNames,
                     const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']) ||
@@ -931,9 +974,26 @@ class _CalendarGrid extends StatelessWidget {
                 (i) => DateFormat('EEE', localeCode)
                     .format(DateTime(2024, 1, 1 + i)))
             : cal.shortDayNames;
-        final configuredStart = cal.dayNames.indexOf(cal.weekStartDay);
-        final headerStart =
-            configuredStart < 0 ? 0 : configuredStart % baseWeekdayNames.length;
+
+        // ── Week-start header + first-day offset ───────────────────────
+        // BOTH computed from the same weekday arithmetic so they can
+        // never disagree. `DateTime.weekday`: Mon=1 … Sun=7.
+        final weekStartValue = _weekdayValueFromName(cal.weekStartDay);
+        final int headerStart;
+        final int startOffset;
+        if (cal.daysPerWeek == 7) {
+          headerStart = useLocalized
+              ? (weekStartValue - DateTime.monday) % 7
+              : _resolveWeekStartIndex(cal) % baseWeekdayNames.length;
+          startOffset =
+              (firstDayGreg.weekday - weekStartValue + 7) % 7;
+        } else {
+          headerStart =
+              _resolveWeekStartIndex(cal) % baseWeekdayNames.length;
+          startOffset =
+              CalendarMath.getWeekStartOffset(cal, firstDayGreg);
+        }
+
         final weekdayNames = List<String>.generate(
             dayCount,
             (i) =>
@@ -961,8 +1021,6 @@ class _CalendarGrid extends StatelessWidget {
           );
         }).toList();
 
-        // Index events by their start-date string AND by every spanned date,
-        // so multi-day events show up on every day they cover.
         final eventsByCalendarAndDate = <String, Set<String>>{};
         final multiDayByCalendarAndDate = <String, _MultiDayMark>{};
         for (final e in provider.events) {
@@ -1060,7 +1118,6 @@ class _CalendarGrid extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Multi-day indicator bar at the top
                   if (multiMark != null)
                     Positioned(
                       top: 4,
@@ -1395,7 +1452,6 @@ class _CalendarGrid extends StatelessWidget {
   }
 }
 
-/// Internal marker describing how a multi-day event spans a specific cell.
 class _MultiDayMark {
   final bool isStart;
   final bool isEnd;
