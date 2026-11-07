@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 [![Open Source](https://img.shields.io/badge/open%20source-yes-brightgreen)](#license)
 
-**Universal Calendar** is a Flutter calendar workspace built around *user-defined calendar systems* rather than a Gregorian-only model. It ships with seven calendar presets — Gregorian, Julian, Ethiopian, Coptic, Biblical (Hebrew), Islamic (Hijri) and French Republican — lets users create entirely custom calendar structures, and layers a full scheduling suite on top: events with repeating and escalating reminders, dual-calendar comparison, date tooling, PDF export, file-based backup and restore, and Christian devotional tools — in English and French.
+**Universal Calendar** is a Flutter calendar workspace built around *user-defined calendar systems* rather than a Gregorian-only model. It ships with seven calendar presets — Gregorian, Julian, Ethiopian, Coptic, Biblical (Hebrew), Islamic (Hijri) and French Republican — lets users create entirely custom calendar structures, and layers a full scheduling suite on top: events with repeating alarms and snooze, dual-calendar comparison, date tooling, PDF export, file-based backup and restore, and Christian devotional tools — in English and French.
 
 ---
 
@@ -83,7 +83,7 @@ This makes it suitable for liturgical planning, cultural/religious calendar obse
 - Week mode swipes by one configured calendar week; Day mode swipes one day at a time.
 - **Day mode** shows only the hours that actually hold appointments — a schedule list rather than an empty 24-hour grid. Appointment cards show their start/end time, can be tapped to open details, and all-day appointments display separately above the timeline.
 - The day strip is a lazily-built horizontal list that stays centred on the selected day: swiping the page, tapping *Today*, or tapping a chip scrolls the strip, and a fling snaps it back to the selection.
-- **Agenda** view with full-text search and range filters (*All*, *Today*, *This week*, *This month*, *Upcoming*) and a per-calendar filter.
+- **Agenda** view with full-text search and range filters (*All*, *Today*, *This week*, *This month*, *Upcoming*) and a per-calendar filter. Its app-bar **Clear all events** action deletes events across every calendar after confirmation and cancels their alarms.
 - A first-run **guided tour** (replayable from Settings → *Replay app tour*).
 
 ### Events and appointments
@@ -99,13 +99,13 @@ This makes it suitable for liturgical planning, cultural/religious calendar obse
 ### Event Alarms
 
 - **Continuous alarm ringing** — Event alarms loop audio and vibration until stopped or snoozed. The alarm screen shows the event, current time, and configured snooze duration.
-- **Standard notification controls** — Android shows an alarm notification with a Stop action. Full-screen intent access is not requested; lock-screen presentation depends on Android notification settings.
-- **Contextual permissions** — Notification and exact-alarm access are requested only when saving an event alarm. Without exact-alarm access, Android may deliver reminders late.
-- **Audio assets** — Alarm tones use bundled audio assets in `assets/sounds/`.
+- **Standard notification controls** — Android shows an alarm notification with Stop and Snooze actions. Full-screen intent is not requested; lock-screen presentation depends on Android notification and device settings.
+- **Contextual permissions** — Notification and exact-alarm access are requested when saving an event alarm or from Settings. Without exact-alarm access, Android may deliver reminders late.
+- **Alarm audio** — Event alarms and in-app tone previews use the same bundled WAV file for each selected tone. Android plays it through the native alarm audio stream; device volume and audio routing can affect what you hear.
 - **11 selectable alarm tones** (`lib/utils/notification_sounds.dart`): Standard Alarm (beep), soft chime, bell, church bells, marimba, harp, drum, birds, hallelujah, piano, and water drops — with instant in-app previews.
 - **Alarm offsets** at event time, **5/10/15/30 minutes, 1 hour or 1 day** before.
 - **Snooze duration** can be set to 5, 10 or 15 minutes per event.
-- **Repeating alarms** for daily and weekly recurring events, including alarms without an end date.
+- **Repeating alarms** for daily and weekly recurring events, including alarms without an end date. End-dated series are scheduled in batches; unbounded series schedule the next occurrence as each alarm rings.
 - **Device Reboot Recovery** — Active alarms are preserved and rescheduled across device reboots.
 
 ### PDF export
@@ -194,7 +194,7 @@ universal_calendar/
 | Flutter | **3.47.5** (target) |
 | Dart | `>=3.4.0 <4.0.0` |
 | Android | Android 12+ tested; 13+/14+ permission paths implemented |
-| Notifications | `flutter_local_notifications 19.4.2` |
+| Alarm playback | `alarm ^5.15.0` |
 | Timezone | `flutter_timezone 4.1.1` + `timezone 0.10.1` |
 | UI / state | Material 3, `provider ^6.0.0`, `shared_preferences`, `intl 0.20.2` |
 | PDF | `pdf ^3.11.0` + `printing ^5.13.0` |
@@ -345,10 +345,13 @@ The day view is tuned for mid-range phones:
 - The cleanup runs once on startup when enabled, and immediately when the period changes.
 
 ### Reminders
-- **11 selectable reminder tones** with in-app preview, each on its own notification channel.
+- **11 selectable reminder tones** with in-app previews using the same bundled WAV audio as event alarms.
 - **Event alarms** with recurring, snoozeable audio alerts and standard Android notification controls.
-- **Repeating events** (`daily` / `weekly`) with an optional *repeat until* date, scheduled as up to 100 occurrences.
+- **Repeating events** (`daily` / `weekly`) with an optional *repeat until* date and rolling scheduling for unbounded repeats.
 - Localized *Stop* action on the notification.
+
+### Agenda
+- The Agenda app bar includes **Clear all events** when events exist. It clearly warns that the action permanently removes events from every calendar and cancels their alarms, then reports how many events were deleted.
 
 ### PDF export
 - Two export modes: **Events** (list with optional descriptions and month grouping) and **Calendar** (wall calendar, 1 or 2 months per page, event and special-day markers, legend).
@@ -386,7 +389,7 @@ The day view is tuned for mid-range phones:
 
 **Not verified in this environment:**
 
-- A physical Android device run, real notification delivery, audible reminder behavior, reboot-receiver restoration and the exact-alarm permission flow require a device/emulator and were not exercised here.
+- A physical Android device run, real notification delivery and audible reminder playback, reboot-receiver restoration and the exact-alarm permission flow require a device/emulator and were not exercised here. Confirm tone playback and alarm volume on your target phone.
 - An APK release build (`flutter build apk --release`) was not performed. Run it after the on-device checks pass.
 - Scroll smoothness was reviewed in code (single scrollable, lazy slivers, fixed-extent strip, indexed event lookup) but frame timings on a physical phone were not profiled here — use `flutter run --profile` and DevTools to confirm on your device.
 

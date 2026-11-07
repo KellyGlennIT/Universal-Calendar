@@ -48,6 +48,7 @@ class CalendarAlarmService {
           return;
         }
         activeRingingAlarm.value = ringing.first;
+        unawaited(_scheduleFollowingOccurrence(ringing.first));
       });
 
       // A platform refusal may defer an alarm; re-register the affected event
@@ -142,7 +143,7 @@ class CalendarAlarmService {
         loopAudio: true,
         vibrate: true,
         androidAlarmClock: true,
-        androidFullScreenIntent: true,
+        androidFullScreenIntent: false,
         androidStopAlarmOnTermination: false,
         warningNotificationOnKill: false,
         volumeSettings: VolumeSettings.fade(
@@ -191,29 +192,26 @@ class CalendarAlarmService {
       await Alarm.stop(alarmId);
       activeRingingAlarm.value = null;
 
-      if (current != null) {
-        final newTime = DateTime.now().add(Duration(minutes: minutes));
-        final snoozedSettings = AlarmSettings(
-          id: current.payload == null
-              ? alarmId
-              : alarmIdFor(current.payload!, _snoozeOccurrence),
-          dateTime: newTime,
-          assetAudioPath: current.assetAudioPath,
-          loopAudio: true,
-          vibrate: true,
-          androidAlarmClock: true,
-          androidFullScreenIntent: true,
-          androidStopAlarmOnTermination: false,
-          warningNotificationOnKill: false,
-          volumeSettings: current.volumeSettings,
-          notificationSettings: current.notificationSettings,
-          payload: current.payload,
-        );
-        final scheduled = await Alarm.set(alarmSettings: snoozedSettings);
-        if (!scheduled) {
-          debugPrint(
-              '[CalendarAlarmService] Could not schedule snoozed alarm.');
-        }
+      final newTime = DateTime.now().add(Duration(minutes: minutes));
+      final snoozedSettings = AlarmSettings(
+        id: current.payload == null
+            ? alarmId
+            : alarmIdFor(current.payload!, _snoozeOccurrence),
+        dateTime: newTime,
+        assetAudioPath: current.assetAudioPath,
+        loopAudio: true,
+        vibrate: true,
+        androidAlarmClock: true,
+        androidFullScreenIntent: false,
+        androidStopAlarmOnTermination: false,
+        warningNotificationOnKill: false,
+        volumeSettings: current.volumeSettings,
+        notificationSettings: current.notificationSettings,
+        payload: current.payload,
+      );
+      final scheduled = await Alarm.set(alarmSettings: snoozedSettings);
+      if (!scheduled) {
+        debugPrint('[CalendarAlarmService] Could not schedule snoozed alarm.');
       }
     } catch (e) {
       debugPrint('[CalendarAlarmService] Error snoozing alarm: $e');
@@ -373,7 +371,7 @@ class CalendarAlarmService {
       loopAudio: true,
       vibrate: true,
       androidAlarmClock: true,
-      androidFullScreenIntent: true,
+      androidFullScreenIntent: false,
       androidStopAlarmOnTermination: false,
       warningNotificationOnKill: false,
       androidSnoozeDuration: Duration(minutes: event.snoozeMinutes),
@@ -394,6 +392,26 @@ class CalendarAlarmService {
       ),
       payload: event.id,
     );
+  }
+
+  static Future<void> _rescheduleAfterPlatformRefusal(int alarmId) async {
+    try {
+      final alarm = await Alarm.getAlarm(alarmId);
+      final eventId = alarm?.payload;
+      if (eventId == null || eventId.isEmpty) return;
+      final prefs = await SharedPreferences.getInstance();
+      final rawEvents = prefs.getString('events');
+      if (rawEvents == null) return;
+      final events = jsonDecode(rawEvents) as List<dynamic>;
+      final json = events.cast<Map>().firstWhere(
+            (item) => item['id'] == eventId,
+            orElse: () => <String, dynamic>{},
+          );
+      if (json.isEmpty) return;
+      await scheduleEvent(CalendarEvent.fromJson(json));
+    } catch (e) {
+      debugPrint('[CalendarAlarmService] Refusal recovery failed: $e');
+    }
   }
 
   static Future<void> _scheduleFollowingOccurrence(
