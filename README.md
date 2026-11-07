@@ -152,7 +152,7 @@ A dedicated suite of devotional utilities (`christian_tools_page.dart`):
 |---|---|
 | <img src="Screenshots/Screenshot_2026-11-05-14-33-29-978_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar month view"> | <img src="Screenshots/Screenshot_2026-11-05-14-43-02-411_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar week view"> |
 | <img src="Screenshots/Screenshot_2026-11-06-09-13-21-087_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar week view"> | <img src="Screenshots/Screenshot_2026-11-06-09-13-24-277_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar week view"> |
-
+,
 | Calendar guide | Create calendar |
 |---|---|
 | <img src="Screenshots/Screenshot_2026-11-06-09-13-35-931_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar guide"> | <img src="Screenshots/Screenshot_2026-11-06-09-13-29-766_com.kellyglenn.universalcalendar.jpg" width="260" alt="Create calendar"> |
