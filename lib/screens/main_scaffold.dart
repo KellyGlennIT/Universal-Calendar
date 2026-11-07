@@ -1,16 +1,12 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../providers/calendar_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/navigation_provider.dart';
-import '../services/notification_service.dart';
 import '../l10n/tr.dart';
 import 'app_drawer.dart';
 import 'calendars_screen.dart';
 import 'christian_tools_page.dart';
-import 'event_detail_page.dart';
 import 'event_search_page.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
@@ -22,89 +18,18 @@ class MainScaffold extends StatefulWidget {
   State<MainScaffold> createState() => MainScaffoldState();
 }
 
-class MainScaffoldState extends State<MainScaffold>
-    with WidgetsBindingObserver {
+class MainScaffoldState extends State<MainScaffold> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    pendingNotificationEventId.addListener(_onNotificationTapped);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showFirstUseTour();
-      _handleNotificationLaunch();
-      _cancelRecentlyFiredReminders();
     });
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    pendingNotificationEventId.removeListener(_onNotificationTapped);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // Covers the full-screen-intent case: the app is brought to front
-      // without any notification tap, so onDidReceiveNotificationResponse
-      // never fires. Cancelling on resume means the rings stop the moment
-      // the user sees the app.
-      _cancelRecentlyFiredReminders();
-    }
-  }
-
-  /// Cancels every pending ring for any event whose reminder fired in the
-  /// past 5 minutes. Skips recurring events (their scheduled notification
-  /// represents the whole series — cancelling it would stop future days).
-  Future<void> _cancelRecentlyFiredReminders() async {
-    if (!mounted) return;
-    final provider = context.read<CalendarProvider>();
-    final now = DateTime.now();
-
-    for (final event in provider.events) {
-      if (!event.escalatingReminder) continue;
-      if (event.repeatMode != 'once') continue;
-      final minutes = event.reminderMinutesBefore;
-      if (minutes == null) continue;
-
-      try {
-        final parts = event.date.split('-').map(int.parse).toList();
-        final timeParts = event.time.split(':').map(int.parse).toList();
-        if (parts.length != 3 || timeParts.length < 2) continue;
-
-        final eventTime = DateTime(
-            parts[0], parts[1], parts[2], timeParts[0], timeParts[1]);
-        final reminderTime = eventTime.subtract(Duration(minutes: minutes));
-        final since = now.difference(reminderTime);
-
-        if (since.inSeconds >= 0 && since.inMinutes < 5) {
-          await CalendarNotificationService.cancelEvent(event.id);
-        }
-      } catch (_) {}
-    }
-  }
-
-  void _onNotificationTapped() {
-    _handleNotificationLaunch();
-  }
-
-  void _handleNotificationLaunch() {
-    final eventId = pendingNotificationEventId.value;
-    if (eventId == null) return;
-    pendingNotificationEventId.value = null;
-
-    // Cancel any pending escalation rings for this event so the app
-    // doesn't keep ringing after the user opens the event.
-    unawaited(CalendarNotificationService.cancelEvent(eventId));
-
-    final provider = context.read<CalendarProvider>();
-    final event = provider.findEventById(eventId);
-    if (event == null) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => EventDetailPage(event: event)),
-    );
   }
 
   Future<void> showFirstUseTour({bool force = false}) async {
@@ -141,13 +66,13 @@ class MainScaffoldState extends State<MainScaffold>
       (
         tr(context, 'Never miss a reminder'),
         tr(context,
-            'Grant notification permission and each event can ring with sound and vibration. Tap "Test notification sound" in Settings to verify.'),
+            'Choose an alarm when saving an event. Notifications and precise timing are requested only when you need them; test a tone in Settings.'),
         Icons.notifications_active,
       ),
       (
         tr(context, 'Your data is yours'),
         tr(context,
-            'Backup as JSON, export to .ics, or duplicate a calendar — from Settings or the Calendars screen. Import into Google or Apple Calendar any time.'),
+            'Back up as JSON or duplicate a calendar — from Settings or the Calendars screen.'),
         Icons.cloud_download,
       ),
     ];
@@ -158,8 +83,8 @@ class MainScaffoldState extends State<MainScaffold>
       barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, update) => AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(26)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
           content: SizedBox(
             width: 360,
             child: Column(

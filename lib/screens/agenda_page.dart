@@ -82,9 +82,7 @@ class _AgendaPageState extends State<AgendaPage> {
       final title = event.title.toLowerCase();
       final notes = event.notes.toLowerCase();
       final dateStr = event.date.toLowerCase();
-      return title.contains(q) ||
-          notes.contains(q) ||
-          dateStr.contains(q);
+      return title.contains(q) || notes.contains(q) || dateStr.contains(q);
     }).toList()
       ..sort((a, b) => a.date.compareTo(b.date));
   }
@@ -119,6 +117,15 @@ class _AgendaPageState extends State<AgendaPage> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         actions: [
+          if (provider.events.isNotEmpty)
+            IconButton(
+              tooltip: tr(context, 'Clear all events'),
+              icon: Icon(
+                Icons.delete_sweep_outlined,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () => _confirmClearAllEvents(context, provider),
+            ),
           if (filtered.isNotEmpty)
             Center(
               child: Container(
@@ -126,9 +133,7 @@ class _AgendaPageState extends State<AgendaPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .primaryColor
-                      .withValues(alpha: 0.15),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -165,6 +170,57 @@ class _AgendaPageState extends State<AgendaPage> {
         ),
         icon: const Icon(Icons.add_rounded),
         label: Text(tr(context, 'Add event')),
+      ),
+    );
+  }
+
+  Future<void> _confirmClearAllEvents(
+    BuildContext context,
+    CalendarProvider provider,
+  ) async {
+    final count = provider.events.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(
+          Icons.delete_sweep_outlined,
+          color: Theme.of(dialogContext).colorScheme.error,
+        ),
+        title: Text(tr(dialogContext, 'Clear all events?')),
+        content: Text(
+          tr(dialogContext,
+                  'This will permanently delete {count} calendar events and cancel their alarms. This cannot be undone.')
+              .replaceAll('{count}', count.toString()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(tr(dialogContext, 'Cancel')),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(tr(dialogContext, 'Clear all')),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+    final deletedCount = await provider.clearAllEvents();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          deletedCount == 1
+              ? tr(context, '1 event deleted.')
+              : tr(context, 'Deleted {count} events.')
+                  .replaceAll('{count}', deletedCount.toString()),
+        ),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -228,8 +284,7 @@ class _AgendaPageState extends State<AgendaPage> {
               label,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
             selected: selected,
@@ -241,8 +296,7 @@ class _AgendaPageState extends State<AgendaPage> {
     );
   }
 
-  Widget _buildCalendarFilter(
-      BuildContext context, CalendarProvider provider) {
+  Widget _buildCalendarFilter(BuildContext context, CalendarProvider provider) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: SizedBox(
@@ -260,33 +314,29 @@ class _AgendaPageState extends State<AgendaPage> {
                   tr(context, 'All calendars'),
                   style: TextStyle(
                     fontSize: 11.5,
-                    fontWeight:
-                        selected ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
                 selected: selected,
-                onSelected: (_) =>
-                    setState(() => _calendarFilter = null),
+                onSelected: (_) => setState(() => _calendarFilter = null),
               );
             }
             final cal = provider.calendars[i - 1];
             final selected = _calendarFilter == cal.id;
             return FilterChip(
-              avatar: Text(cal.emoji,
-                  style: const TextStyle(fontSize: 14)),
+              avatar: Text(cal.emoji, style: const TextStyle(fontSize: 14)),
               label: Text(
                 cal.name,
                 style: TextStyle(
                   fontSize: 11.5,
                   color: selected ? cal.color : null,
-                  fontWeight:
-                      selected ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
               selected: selected,
               selectedColor: cal.color.withValues(alpha: 0.18),
-              onSelected: (_) => setState(() =>
-                  _calendarFilter = selected ? null : cal.id),
+              onSelected: (_) =>
+                  setState(() => _calendarFilter = selected ? null : cal.id),
             );
           },
         ),
@@ -304,11 +354,9 @@ class _AgendaPageState extends State<AgendaPage> {
     final items = <Widget>[];
     for (final dateStr in sortedDates) {
       final events = grouped[dateStr]!;
-      items.add(_dateHeader(
-          context, dateStr, events.length, localeCode));
+      items.add(_dateHeader(context, dateStr, events.length, localeCode));
       for (final event in events) {
-        items.add(_eventCard(
-            context, provider, event, localeCode));
+        items.add(_eventCard(context, provider, event, localeCode));
       }
     }
     items.add(const SizedBox(height: 96));
@@ -319,8 +367,8 @@ class _AgendaPageState extends State<AgendaPage> {
     );
   }
 
-  Widget _dateHeader(BuildContext context, String dateStr, int count,
-      String localeCode) {
+  Widget _dateHeader(
+      BuildContext context, String dateStr, int count, String localeCode) {
     DateTime? date;
     try {
       final parts = dateStr.split('-').map(int.parse).toList();
@@ -384,10 +432,7 @@ class _AgendaPageState extends State<AgendaPage> {
                       subtitle,
                       style: TextStyle(
                         fontSize: 11,
-                        color: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.color,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
                       ),
                     ),
                   ),
@@ -395,12 +440,9 @@ class _AgendaPageState extends State<AgendaPage> {
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .primaryColor
-                  .withValues(alpha: 0.12),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -437,14 +479,12 @@ class _AgendaPageState extends State<AgendaPage> {
           borderRadius: BorderRadius.circular(14),
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(
-                builder: (_) => EventDetailPage(event: event)),
+            MaterialPageRoute(builder: (_) => EventDetailPage(event: event)),
           ),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border(
-                  left: BorderSide(color: event.color, width: 4)),
+              border: Border(left: BorderSide(color: event.color, width: 4)),
             ),
             padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
             child: Row(
@@ -471,10 +511,7 @@ class _AgendaPageState extends State<AgendaPage> {
                                 ? Icons.wb_sunny_outlined
                                 : Icons.schedule_rounded,
                             size: 12,
-                            color: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.color,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -488,9 +525,10 @@ class _AgendaPageState extends State<AgendaPage> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Icon(cal.emoji.isNotEmpty
-                              ? Icons.circle
-                              : Icons.circle,
+                          Icon(
+                              cal.emoji.isNotEmpty
+                                  ? Icons.circle
+                                  : Icons.circle,
                               size: 6,
                               color: cal.color),
                           const SizedBox(width: 4),
@@ -519,10 +557,7 @@ class _AgendaPageState extends State<AgendaPage> {
                           style: TextStyle(
                             fontSize: 11.5,
                             height: 1.35,
-                            color: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.color,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                         ),
                       ],
@@ -533,10 +568,9 @@ class _AgendaPageState extends State<AgendaPage> {
                   Padding(
                     padding: const EdgeInsets.only(left: 6, top: 2),
                     child: Icon(
-                      Icons.notifications_active_outlined,
+                      Icons.alarm,
                       size: 14,
-                      color:
-                          Theme.of(context).textTheme.bodySmall?.color,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
                   ),
               ],
@@ -547,8 +581,7 @@ class _AgendaPageState extends State<AgendaPage> {
     );
   }
 
-  Widget _buildEmptyState(
-      BuildContext context, CalendarProvider provider) {
+  Widget _buildEmptyState(BuildContext context, CalendarProvider provider) {
     final noEvents = provider.events.isEmpty;
     final hasQuery = _query.trim().isNotEmpty;
 
@@ -559,11 +592,9 @@ class _AgendaPageState extends State<AgendaPage> {
             : tr(context, 'Nothing in this period');
 
     final subtitle = noEvents
-        ? tr(context,
-            'Tap + to add your first event and it will appear here.')
+        ? tr(context, 'Tap + to add your first event and it will appear here.')
         : hasQuery
-            ? tr(context,
-                'Try a different search or clear your filters.')
+            ? tr(context, 'Try a different search or clear your filters.')
             : tr(context, 'Try another date range or tap All.');
 
     final icon = noEvents
@@ -583,9 +614,7 @@ class _AgendaPageState extends State<AgendaPage> {
               height: 76,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context)
-                    .primaryColor
-                    .withValues(alpha: 0.10),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.10),
               ),
               child: Icon(
                 icon,
@@ -609,8 +638,7 @@ class _AgendaPageState extends State<AgendaPage> {
               style: TextStyle(
                 fontSize: 12.5,
                 height: 1.45,
-                color:
-                    Theme.of(context).textTheme.bodySmall?.color,
+                color: Theme.of(context).textTheme.bodySmall?.color,
               ),
             ),
             if (hasQuery || _range != _RangeFilter.all) ...[

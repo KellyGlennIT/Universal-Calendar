@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 [![Open Source](https://img.shields.io/badge/open%20source-yes-brightgreen)](#license)
 
-**Universal Calendar** is a Flutter calendar workspace built around *user-defined calendar systems* rather than a Gregorian-only model. It ships with seven calendar presets — Gregorian, Julian, Ethiopian, Coptic, Biblical (Hebrew), Islamic (Hijri) and French Republican — lets users create entirely custom calendar structures, and layers a full scheduling suite on top: events with repeating and escalating reminders, dual-calendar comparison, date tooling, PDF/ICS/CSV export, file-based backup and restore, and Christian devotional tools — in English and French.
+**Universal Calendar** is a Flutter calendar workspace built around *user-defined calendar systems* rather than a Gregorian-only model. It ships with seven calendar presets — Gregorian, Julian, Ethiopian, Coptic, Biblical (Hebrew), Islamic (Hijri) and French Republican — lets users create entirely custom calendar structures, and layers a full scheduling suite on top: events with repeating and escalating reminders, dual-calendar comparison, date tooling, PDF export, file-based backup and restore, and Christian devotional tools — in English and French.
 
 ---
 
@@ -17,7 +17,7 @@
   - [Calendar display and navigation](#calendar-display-and-navigation)
   - [Events and appointments](#events-and-appointments)
   - [Reminders and audible alerts](#reminders-and-audible-alerts)
-  - [PDF, ICS and CSV export](#pdf-ics-and-csv-export)
+  - [PDF export](#pdf-export)
   - [Backup and restore](#backup-and-restore)
   - [Storage cleanup](#storage-cleanup)
   - [English and French](#english-and-french)
@@ -91,34 +91,30 @@ This makes it suitable for liturgical planning, cultural/religious calendar obse
 - Events retain title, notes, calendar, color and date, and support **multi-day spans** (`endDate`).
 - **Editable appointment duration**: 15, 30, 45 min, 1, 1.5, 2 or 3 hours.
 - **All-day flag** is stored explicitly. Legacy `00:00` records with no flag keep the old all-day interpretation (backwards-compatible migration).
-- **Repeating events**: `once`, `daily` or `weekly`, with an optional *repeat until* end date. Repeats are scheduled as up to 100 individual occurrences.
+- **Repeating events**: `once`, `daily` or `weekly`, with an optional *repeat until* end date. Repeating alarms use a rolling schedule so long-running series continue.
 - Event detail, day timeline, week summary and agenda all show the appointment time range.
 - Updating or deleting an event updates/cancels its pending reminder.
 - Full-text **event search** across all calendars (`event_search_page.dart`), plus search inside the agenda.
 
-### Reminders and audible alerts
+### Event Alarms
 
-- Reminders at event time, **5/10/15/30 minutes, 1 hour or 1 day** before.
-- **11 selectable reminder tones** (`lib/utils/notification_sounds.dart`): default, chime, bell, bells, beep, marimba, harp, drum, birds, hallelujah, piano, water — each with an in-app preview.
-- **Alarm-style reminders** — *Show over lock screen* uses a full-screen intent.
-- **Ring multiple times** — an escalating reminder re-fires 4 more times at 30-second intervals (one-shot events only).
-- Reminder times use the device's **IANA timezone**, including daylight-saving transitions.
-- Android notification permission is checked correctly on Android 12 and earlier as well as Android 13+.
-- Android 14+ **exact-alarm access** is requested once when available; if declined, the app schedules an inexact reminder instead of silently dropping it.
-- **Android reboot receivers** restore scheduled reminders after device restart.
-- A dedicated **sound-enabled notification channel per tone**, a small notification icon, and a localized *Stop* action on the notification.
-- Existing saved events are rescheduled when the app loads. Removing a calendar or resetting data cancels its reminders.
-- A first-run **notification permission screen** explains why the app needs the permission before requesting it.
+- **Continuous alarm ringing** — Event alarms loop audio and vibration until stopped or snoozed. The alarm screen shows the event, current time, and configured snooze duration.
+- **Standard notification controls** — Android shows an alarm notification with a Stop action. Full-screen intent access is not requested; lock-screen presentation depends on Android notification settings.
+- **Contextual permissions** — Notification and exact-alarm access are requested only when saving an event alarm. Without exact-alarm access, Android may deliver reminders late.
+- **Audio assets** — Alarm tones use bundled audio assets in `assets/sounds/`.
+- **11 selectable alarm tones** (`lib/utils/notification_sounds.dart`): Standard Alarm (beep), soft chime, bell, church bells, marimba, harp, drum, birds, hallelujah, piano, and water drops — with instant in-app previews.
+- **Alarm offsets** at event time, **5/10/15/30 minutes, 1 hour or 1 day** before.
+- **Snooze duration** can be set to 5, 10 or 15 minutes per event.
+- **Repeating alarms** for daily and weekly recurring events, including alarms without an end date.
+- **Device Reboot Recovery** — Active alarms are preserved and rescheduled across device reboots.
 
-### PDF, ICS and CSV export
+### PDF export
 
 - **Export PDF** in the navigation drawer opens a dedicated export page with two modes:
   - **Events** — a typeset event list for a date range, with optional descriptions and month grouping.
   - **Calendar** — a wall-calendar style PDF for a chosen year, with 1 or 2 months per page, event markers and special-day markers, and a legend.
 - The generated PDF is typeset directly from the selected calendar's **own month names, weekday names, week length and month lengths** — not from a Gregorian template.
 - The finished PDF is shared/saved as `universal_calendar_events.pdf` or `universal_calendar_<year>.pdf`.
-- `ExportService` also produces **ICS** (RFC 5545, importable into Google Calendar, Apple Calendar, Outlook, Thunderbird) and **CSV** (`Date,Time,Duration (min),Title,Notes,All-day,Reminder (min)`).
-
 ### Backup and restore
 
 - **Export backup** writes a pretty-printed `.json` file (`universal_calendar_backup_<timestamp>.json`) to the temp directory and immediately opens the system **share sheet**, so the user chooses where it goes (Files, Drive, email, …). The temp file is deleted afterwards.
@@ -169,7 +165,7 @@ universal_calendar/
 │   ├── models/                       # CalendarModel, CalendarEvent, SpecialDay, PrayerRequest, …
 │   ├── providers/                    # State (calendar, locale, navigation, christian tools)
 │   ├── screens/                      # All UI screens (home, day view, agenda, settings, …)
-│   ├── services/                     # Notifications, PDF export, ICS/CSV export, backup
+│   ├── services/                     # Notifications, PDF export, backup
 │   ├── theme/                        # App-wide Material 3 dark theme
 │   ├── utils/                        # Calendar math, presets, formatters, dialogs, tones
 │   │   └── notification_sounds.dart  # Alert-tone catalogue + playback helpers
@@ -320,7 +316,7 @@ Run with `flutter test`. A clean run prints `All tests passed!`.
 
 - All calendars, events, special days, Christian-tool entries, language choice and app settings are stored **locally** on the device using `SharedPreferences` (JSON-serialized).
 - No network calls, analytics or telemetry.
-- Exported PDF / ICS / CSV files and backup `.json` files are written to the app's **documents or temp directory** and handed to the system share sheet — nothing is uploaded.
+- Exported PDF files and backup `.json` files are written to the app's **documents or temp directory** and handed to the system share sheet — nothing is uploaded.
 - **Reset All Data** (in Settings) wipes calendars, events and preferences back to the three built-in default calendars (Gregorian, Ethiopian, Biblical) and cancels all pending reminders.
 
 ---
@@ -350,7 +346,7 @@ The day view is tuned for mid-range phones:
 
 ### Reminders
 - **11 selectable reminder tones** with in-app preview, each on its own notification channel.
-- **Alarm-style** reminders (full-screen intent) and **ring multiple times** (4 escalating re-fires at 30-second intervals).
+- **Event alarms** with recurring, snoozeable audio alerts and standard Android notification controls.
 - **Repeating events** (`daily` / `weekly`) with an optional *repeat until* date, scheduled as up to 100 occurrences.
 - Localized *Stop* action on the notification.
 

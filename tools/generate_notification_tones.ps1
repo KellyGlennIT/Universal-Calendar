@@ -1,10 +1,9 @@
-# Generates short, distinct notification tones as 22.05 kHz mono 16-bit WAV
-# files, written into android/app/src/main/res/raw/.
-# Android requires .wav/.ogg/.mp3 for raw notification channels.
+# Generates short, distinct alarm tones as 22.05 kHz mono 16-bit WAV files
+# bundled by Flutter from assets/sounds/.
 
 $ErrorActionPreference = 'Stop'
 $sampleRate = 22050
-$outDir = Join-Path $PSScriptRoot 'android\app\src\main\res\raw'
+$outDir = Join-Path $PSScriptRoot '..\assets\sounds'
 
 if (-not (Test-Path $outDir)) {
     New-Item -ItemType Directory -Path $outDir -Force | Out-Null
@@ -274,4 +273,4 @@ New-Wav -Name 'water' -Seconds 1.3 -Render {
     }
 }
 
-Write-Output "Done. Files written to $outDir"
+Write-Output "Done. Alarm tone assets written to $outDir"

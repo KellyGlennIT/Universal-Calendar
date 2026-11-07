@@ -160,7 +160,7 @@ class CalendarExplainerPage extends StatelessWidget {
           leapYear: tr(context,
               'Four rules available: none, every 4 years, Gregorian-style, or a custom position pattern (e.g. 3, 6, 8, 11, 14, 17, 19).'),
           keyFacts: tr(context,
-              '• Perfect for fictional-world building\n• Supports non-standard weekday lengths\n• Can be exported to .ics, CSV, or JSON backup\n• Combine with a Year Offset to anchor your year numbering'),
+              '• Perfect for fictional-world building\n• Supports non-standard weekday lengths\n• Can be backed up as JSON\n• Combine with a Year Offset to anchor your year numbering'),
           whenToUse: tr(context,
               'Fiction, tabletop RPGs, academic experiments, alternative timekeeping.'),
         ),

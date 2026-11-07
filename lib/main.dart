@@ -11,7 +11,6 @@ import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/language_selection_screen.dart';
-import 'screens/notification_permission_screen.dart';
 import 'screens/main_scaffold.dart';
 import 'screens/create_calendar_page.dart';
 import 'screens/equivalents_page.dart';
@@ -29,13 +28,14 @@ import 'screens/scripture_memory_page.dart';
 import 'screens/calendar_explainer_page.dart';
 import 'screens/pdf_export_page.dart';
 import 'screens/agenda_page.dart';
+import 'screens/alarm_ringing_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await CalendarNotificationService.initialize();
+    await CalendarAlarmService.initialize();
   } catch (error) {
-    debugPrint('Notification initialization failed: $error');
+    debugPrint('Alarm initialization failed: $error');
   }
   runApp(
     MultiProvider(
@@ -72,13 +72,27 @@ class UniversalCalendarApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buildDarkTheme(),
       themeMode: ThemeMode.dark,
+      builder: (context, child) {
+        return ValueListenableBuilder(
+          valueListenable: activeRingingAlarm,
+          builder: (context, ringingAlarm, _) {
+            if (ringingAlarm != null) {
+              return Stack(
+                children: [
+                  if (child != null) child,
+                  AlarmRingingScreen(alarmSettings: ringingAlarm),
+                ],
+              );
+            }
+            return child ?? const SizedBox.shrink();
+          },
+        );
+      },
       home: !localeProvider.isLoaded
           ? const SplashScreen()
           : !localeProvider.hasSelectedLanguage
               ? const LanguageSelectionScreen()
-              : !localeProvider.hasAskedForNotifications
-                  ? const NotificationPermissionScreen()
-                  : const MainScaffold(),
+              : const MainScaffold(),
       routes: {
         '/create_calendar': (context) => const CreateCalendarPage(),
         '/equivalents': (context) => const EquivalentsPage(),

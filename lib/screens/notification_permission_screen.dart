@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/locale_provider.dart';
 import '../services/notification_service.dart';
 import '../l10n/tr.dart';
 
@@ -8,42 +6,33 @@ class NotificationPermissionScreen extends StatelessWidget {
   const NotificationPermissionScreen({super.key});
 
   Future<void> _handleEnable(BuildContext context) async {
-    final locale = context.read<LocaleProvider>();
-    final messenger = ScaffoldMessenger.of(context);
-
-    final granted = await CalendarNotificationService.requestPermission();
-    await locale.markNotificationsAsked();
-
+    final granted = await CalendarAlarmService.requestPermission();
     if (!context.mounted) return;
 
     if (granted) {
-      // Fire a real notification using the default-sound channel so the
-      // user hears the tone immediately — and you get instant proof that
-      // sound is routing correctly.
-      await CalendarNotificationService.sendTestNotification();
-      if (!context.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(tr(context, 'Notifications enabled')),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      Navigator.pop(context, true);
       return;
     }
 
-    // Denied path — explain and offer to open Settings.
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr(ctx, 'Notifications are off')),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(tr(dialogContext, 'Alarms are off')),
         content: Text(tr(
-          ctx,
-          'You can turn notifications back on later in your device settings. Without them, your reminders will not ring.',
+          dialogContext,
+          'Allow notifications and Alarms & reminders access in system settings. Without exact-alarm access, Android may deliver reminders late.',
         )),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(tr(ctx, 'Later')),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(tr(dialogContext, 'Later')),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await CalendarAlarmService.openSystemAppSettings();
+            },
+            child: Text(tr(dialogContext, 'Open settings')),
           ),
         ],
       ),
@@ -52,7 +41,6 @@ class NotificationPermissionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<LocaleProvider>();
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -66,35 +54,36 @@ class NotificationPermissionScreen extends StatelessWidget {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 460),
-              child: Padding(
-                padding: const EdgeInsets.all(28),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Spacer(),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        tooltip: tr(context, 'Back'),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Container(
-                      width: 110,
-                      height: 110,
+                      width: 96,
+                      height: 96,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(colors: [
                           const Color(0xFF8B82FF).withValues(alpha: 0.35),
                           const Color(0xFF63C7C2).withValues(alpha: 0.25),
                         ]),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF8B82FF)
-                                .withValues(alpha: 0.3),
-                            blurRadius: 40,
-                            spreadRadius: 6,
-                          ),
-                        ],
                       ),
-                      child: const Icon(Icons.notifications_active,
-                          size: 56, color: Colors.white),
+                      child: const Icon(Icons.alarm_on,
+                          size: 52, color: Colors.white),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
                     Text(
-                      tr(context, 'Never miss a moment'),
+                      tr(context, 'Enable event alarms'),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 26,
@@ -105,8 +94,10 @@ class NotificationPermissionScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      tr(context,
-                          'Allow notifications so your calendar reminders can ring with sound and vibration at the right time.'),
+                      tr(
+                        context,
+                        'Allow notifications and exact alarm access so this event reminder can ring close to its scheduled time. Without exact-alarm access, Android may deliver it late. A standard notification is used; lock-screen display and sound can also depend on device settings.',
+                      ),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 15,
@@ -114,13 +105,13 @@ class NotificationPermissionScreen extends StatelessWidget {
                         height: 1.5,
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () => _handleEnable(context),
-                        icon: const Icon(Icons.notifications_active, size: 20),
-                        label: Text(tr(context, 'Enable notifications')),
+                        icon: const Icon(Icons.alarm, size: 20),
+                        label: Text(tr(context, 'Enable event alarms')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF8B82FF),
                           foregroundColor: Colors.white,
@@ -132,19 +123,12 @@ class NotificationPermissionScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: TextButton(
-                        onPressed: () async {
-                          await context
-                              .read<LocaleProvider>()
-                              .markNotificationsAsked();
-                        },
-                        child: Text(
-                          tr(context, 'Not now'),
-                          style: const TextStyle(
-                              color: Color(0xFFB0B0C0), fontSize: 15),
-                        ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(
+                        tr(context, 'Not now'),
+                        style: const TextStyle(
+                            color: Color(0xFFB0B0C0), fontSize: 15),
                       ),
                     ),
                   ],

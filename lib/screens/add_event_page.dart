@@ -8,6 +8,7 @@ import '../services/notification_service.dart';
 import '../utils/calendar_math.dart';
 import '../utils/notification_sounds.dart';
 import '../l10n/tr.dart';
+import 'notification_permission_screen.dart';
 
 class AddEventPage extends StatefulWidget {
   final CalendarEvent? eventToEdit;
@@ -34,7 +35,7 @@ class _AddEventPageState extends State<AddEventPage> {
   String? _reminderSound;
   int _durationMinutes = 60;
   bool _alarmStyle = false;
-  bool _escalatingReminder = false;
+  int _snoozeMinutes = 5;
   String _repeatMode = 'once';
   DateTime? _repeatUntil;
   bool _saving = false;
@@ -72,7 +73,7 @@ class _AddEventPageState extends State<AddEventPage> {
       _reminderSound = e.reminderSound;
       _durationMinutes = e.durationMinutes;
       _alarmStyle = e.alarmStyle;
-      _escalatingReminder = e.escalatingReminder;
+      _snoozeMinutes = e.snoozeMinutes;
       _repeatMode = e.repeatMode;
       _repeatUntil = e.repeatUntil;
     } else {
@@ -159,8 +160,7 @@ class _AddEventPageState extends State<AddEventPage> {
                                 children: [
                                   Text(tr(context, 'Starts'),
                                       style: const TextStyle(
-                                          fontSize: 10.5,
-                                          color: Colors.grey)),
+                                          fontSize: 10.5, color: Colors.grey)),
                                   Text(dateStr,
                                       style: Theme.of(context)
                                           .textTheme
@@ -193,8 +193,7 @@ class _AddEventPageState extends State<AddEventPage> {
                                 children: [
                                   Text(tr(context, 'Ends'),
                                       style: const TextStyle(
-                                          fontSize: 10.5,
-                                          color: Colors.grey)),
+                                          fontSize: 10.5, color: Colors.grey)),
                                   Text(
                                     endStr ?? tr(context, 'Same day'),
                                     style: Theme.of(context)
@@ -252,8 +251,7 @@ class _AddEventPageState extends State<AddEventPage> {
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
-                                    color:
-                                        Theme.of(context).primaryColor,
+                                    color: Theme.of(context).primaryColor,
                                   ),
                                 ),
                               ],
@@ -283,8 +281,7 @@ class _AddEventPageState extends State<AddEventPage> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(_getFormattedTime(),
                                         style: Theme.of(context)
@@ -314,8 +311,8 @@ class _AddEventPageState extends State<AddEventPage> {
                 const SizedBox(height: 12),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: DropdownButtonFormField<int>(
                       key: ValueKey('duration_$_durationMinutes'),
                       initialValue: _durationMinutes,
@@ -326,26 +323,19 @@ class _AddEventPageState extends State<AddEventPage> {
                       ),
                       items: [
                         DropdownMenuItem(
-                            value: 15,
-                            child: Text(tr(context, '15 min'))),
+                            value: 15, child: Text(tr(context, '15 min'))),
                         DropdownMenuItem(
-                            value: 30,
-                            child: Text(tr(context, '30 min'))),
+                            value: 30, child: Text(tr(context, '30 min'))),
                         DropdownMenuItem(
-                            value: 45,
-                            child: Text(tr(context, '45 min'))),
+                            value: 45, child: Text(tr(context, '45 min'))),
                         DropdownMenuItem(
-                            value: 60,
-                            child: Text(tr(context, '1 hour'))),
+                            value: 60, child: Text(tr(context, '1 hour'))),
                         DropdownMenuItem(
-                            value: 90,
-                            child: Text(tr(context, '1.5 hours'))),
+                            value: 90, child: Text(tr(context, '1.5 hours'))),
                         DropdownMenuItem(
-                            value: 120,
-                            child: Text(tr(context, '2 hours'))),
+                            value: 120, child: Text(tr(context, '2 hours'))),
                         DropdownMenuItem(
-                            value: 180,
-                            child: Text(tr(context, '3 hours'))),
+                            value: 180, child: Text(tr(context, '3 hours'))),
                       ],
                       onChanged: (v) =>
                           setState(() => _durationMinutes = v ?? 60),
@@ -356,25 +346,22 @@ class _AddEventPageState extends State<AddEventPage> {
               const SizedBox(height: 12),
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: DropdownButtonFormField<int?>(
                     key: ValueKey(
                         'reminder_${_reminderMinutesBefore ?? 'none'}'),
                     initialValue: _reminderMinutesBefore,
                     decoration: InputDecoration(
-                      labelText: tr(context, 'Reminder'),
-                      prefixIcon:
-                          const Icon(Icons.notifications_active_outlined),
+                      labelText: tr(context, 'Alarm'),
+                      prefixIcon: const Icon(Icons.alarm),
                       border: InputBorder.none,
                     ),
                     items: [
                       DropdownMenuItem(
-                          value: null,
-                          child: Text(tr(context, 'No reminder'))),
+                          value: null, child: Text(tr(context, 'No alarm'))),
                       DropdownMenuItem(
-                          value: 0,
-                          child: Text(tr(context, 'At event time'))),
+                          value: 0, child: Text(tr(context, 'At event time'))),
                       DropdownMenuItem(
                           value: 5,
                           child: Text(tr(context, '5 minutes before'))),
@@ -388,8 +375,7 @@ class _AddEventPageState extends State<AddEventPage> {
                           value: 30,
                           child: Text(tr(context, '30 minutes before'))),
                       DropdownMenuItem(
-                          value: 60,
-                          child: Text(tr(context, '1 hour before'))),
+                          value: 60, child: Text(tr(context, '1 hour before'))),
                       DropdownMenuItem(
                           value: 1440,
                           child: Text(tr(context, '1 day before'))),
@@ -398,9 +384,10 @@ class _AddEventPageState extends State<AddEventPage> {
                       _reminderMinutesBefore = v;
                       if (v == null) {
                         _alarmStyle = false;
-                        _escalatingReminder = false;
                         _repeatMode = 'once';
                         _repeatUntil = null;
+                      } else {
+                        _alarmStyle = true;
                       }
                     }),
                   ),
@@ -408,13 +395,46 @@ class _AddEventPageState extends State<AddEventPage> {
               ),
               if (_reminderMinutesBefore != null) ...[
                 const SizedBox(height: 12),
+                if (_isAllDay)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      tr(context,
+                          'All-day event alarms ring at 9:00 AM local time.'),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                Card(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: DropdownButtonFormField<int>(
+                      key: ValueKey('snooze_$_snoozeMinutes'),
+                      initialValue: _snoozeMinutes,
+                      decoration: InputDecoration(
+                        labelText: tr(context, 'Snooze duration'),
+                        prefixIcon: const Icon(Icons.snooze),
+                        border: InputBorder.none,
+                      ),
+                      items: [5, 10, 15].map((minutes) {
+                        return DropdownMenuItem(
+                          value: minutes,
+                          child: Text('$minutes ${tr(context, 'minutes')}'),
+                        );
+                      }).toList(),
+                      onChanged: (value) =>
+                          setState(() => _snoozeMinutes = value ?? 5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Card(
                   child: ListTile(
                     leading: Icon(toneById(_reminderSound).icon),
-                    title: Text(tr(context, 'Reminder sound')),
+                    title: Text(tr(context, 'Alarm sound')),
                     subtitle: Text(
                       '${tr(context, toneById(_reminderSound).label)} · '
-                      '${tr(context, 'Plays at alarm volume')}',
+                      '${tr(context, 'Plays repeatedly at alarm volume')}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -424,8 +444,8 @@ class _AddEventPageState extends State<AddEventPage> {
                         IconButton(
                           icon: const Icon(Icons.play_circle_outline),
                           tooltip: tr(context, 'Preview'),
-                          onPressed: () => CalendarNotificationService
-                              .previewTone(_reminderSound),
+                          onPressed: () =>
+                              CalendarAlarmService.previewTone(_reminderSound),
                         ),
                         const Icon(Icons.chevron_right),
                       ],
@@ -437,47 +457,17 @@ class _AddEventPageState extends State<AddEventPage> {
                 Card(
                   child: SwitchListTile(
                     secondary: Icon(
-                      Icons.fullscreen,
+                      Icons.volume_up,
                       color: Theme.of(context).primaryColor,
                     ),
-                    title: Text(tr(context, 'Show over lock screen')),
+                    title: Text(tr(context, 'Enforce alarm volume')),
                     subtitle: Text(
                       tr(context,
-                          'Pops up even when the phone is locked'),
+                          'Keeps the alarm at full volume while it rings. Device settings may affect playback.'),
                       style: const TextStyle(fontSize: 12),
                     ),
                     value: _alarmStyle,
-                    onChanged: _onAlarmStyleChanged,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Card(
-                  child: SwitchListTile(
-                    secondary: Icon(
-                      Icons.repeat_on_outlined,
-                      color: _repeatMode == 'once'
-                          ? Theme.of(context).primaryColor
-                          : Colors.grey,
-                    ),
-                    title: Text(
-                      tr(context, 'Ring multiple times'),
-                      style: TextStyle(
-                        color: _repeatMode == 'once' ? null : Colors.grey,
-                      ),
-                    ),
-                    subtitle: Text(
-                      _repeatMode == 'once'
-                          ? tr(context,
-                              'Rings 5 times over 2 minutes so you don\'t miss it')
-                          : tr(context,
-                              'Available for one-time events only'),
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    value: _escalatingReminder,
-                    onChanged: _repeatMode == 'once'
-                        ? (v) =>
-                            setState(() => _escalatingReminder = v)
-                        : null,
+                    onChanged: (v) => setState(() => _alarmStyle = v),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -528,14 +518,12 @@ class _AddEventPageState extends State<AddEventPage> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                       child: Text(tr(context, 'Notes'),
-                          style:
-                              const TextStyle(fontWeight: FontWeight.w600)),
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
                     ),
                     TextFormField(
                       controller: _notesController,
                       decoration: InputDecoration(
-                        hintText:
-                            tr(context, 'Add details or reminders...'),
+                        hintText: tr(context, 'Add details or reminders...'),
                         hintStyle: const TextStyle(fontSize: 13),
                         border: InputBorder.none,
                         filled: false,
@@ -641,21 +629,7 @@ class _AddEventPageState extends State<AddEventPage> {
     }
   }
 
-  Future<void> _onAlarmStyleChanged(bool value) async {
-    setState(() => _alarmStyle = value);
-    if (!value) return;
-    final granted =
-        await CalendarNotificationService.requestFullScreenIntentPermission();
-    if (!mounted) return;
-    if (!granted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(tr(context,
-              'Full-screen popup saved. Allow the permission in system settings to enable it.')),
-        ),
-      );
-    }
-  }
+  // Kept for backward compatibility if needed.
 
   String _repeatLabel(BuildContext context) {
     switch (_repeatMode) {
@@ -677,12 +651,32 @@ class _AddEventPageState extends State<AddEventPage> {
   String _formatDate(DateTime d, String locale) {
     final months = {
       'en': [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ],
       'fr': [
-        'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
-        'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'
+        'janv.',
+        'févr.',
+        'mars',
+        'avr.',
+        'mai',
+        'juin',
+        'juil.',
+        'août',
+        'sept.',
+        'oct.',
+        'nov.',
+        'déc.'
       ],
     };
     final list = months[locale] ?? months['en']!;
@@ -751,16 +745,13 @@ class _AddEventPageState extends State<AddEventPage> {
         _repeatMode = picked;
         if (picked == 'once') {
           _repeatUntil = null;
-        } else {
-          _escalatingReminder = false;
         }
       });
     }
   }
 
   Future<void> _pickRepeatUntil(BuildContext context) async {
-    final initial =
-        _repeatUntil ?? _selectedDate.add(const Duration(days: 30));
+    final initial = _repeatUntil ?? _selectedDate.add(const Duration(days: 30));
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -845,7 +836,7 @@ class _AddEventPageState extends State<AddEventPage> {
                   ),
                 ),
               ),
-              Text(tr(context, 'Reminder sound'),
+              Text(tr(context, 'Alarm sound'),
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
@@ -861,15 +852,13 @@ class _AddEventPageState extends State<AddEventPage> {
                   itemCount: notificationTones.length,
                   itemBuilder: (context, index) {
                     final tone = notificationTones[index];
-                    final isSelected =
-                        toneById(_reminderSound).id == tone.id;
+                    final isSelected = toneById(_reminderSound).id == tone.id;
                     return ListTile(
                       dense: true,
                       leading: Icon(
                         tone.icon,
-                        color: isSelected
-                            ? Theme.of(context).primaryColor
-                            : null,
+                        color:
+                            isSelected ? Theme.of(context).primaryColor : null,
                       ),
                       title: Text(tr(context, tone.label)),
                       trailing: Row(
@@ -880,8 +869,8 @@ class _AddEventPageState extends State<AddEventPage> {
                                 size: 20,
                                 color: Theme.of(context).primaryColor),
                           IconButton(
-                            icon: const Icon(Icons.play_circle_outline,
-                                size: 20),
+                            icon:
+                                const Icon(Icons.play_circle_outline, size: 20),
                             tooltip: tr(context, 'Preview'),
                             onPressed: () =>
                                 CalendarNotificationService.previewTone(
@@ -954,8 +943,8 @@ class _AddEventPageState extends State<AddEventPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(tr(context, 'Select Biblical Time'),
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const Divider(),
             Expanded(
               child: ListView.builder(
@@ -968,8 +957,7 @@ class _AddEventPageState extends State<AddEventPage> {
                   title: Text(labels[index]),
                   onTap: () {
                     setState(() {
-                      _selectedTime =
-                          TimeOfDay(hour: values[index], minute: 0);
+                      _selectedTime = TimeOfDay(hour: values[index], minute: 0);
                     });
                     Navigator.pop(context);
                   },
@@ -984,8 +972,7 @@ class _AddEventPageState extends State<AddEventPage> {
 
   String _format12Hour(int hour24) {
     final ampm = hour24 >= 12 ? 'PM' : 'AM';
-    final h12 =
-        hour24 == 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
+    final h12 = hour24 == 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
     return '$h12 $ampm';
   }
 
@@ -1020,44 +1007,46 @@ class _AddEventPageState extends State<AddEventPage> {
       notes: _notesController.text,
       calendarId: provider.selectedCalendarId.isNotEmpty
           ? provider.selectedCalendarId
-          : (provider.calendars.isNotEmpty
-              ? provider.calendars.first.id
-              : ''),
+          : (provider.calendars.isNotEmpty ? provider.calendars.first.id : ''),
       color: _selectedColor,
       reminderMinutesBefore: _reminderMinutesBefore,
       isAllDay: _isAllDay,
       durationMinutes: _durationMinutes,
-      reminderSound:
-          _reminderMinutesBefore == null ? null : _reminderSound,
+      reminderSound: _reminderMinutesBefore == null ? null : _reminderSound,
       alarmStyle: _reminderMinutesBefore != null && _alarmStyle,
-      escalatingReminder: _reminderMinutesBefore != null &&
-          _repeatMode == 'once' &&
-          _escalatingReminder,
-      repeatMode:
-          _reminderMinutesBefore == null ? 'once' : _repeatMode,
+      snoozeMinutes: _snoozeMinutes,
+      repeatMode: _reminderMinutesBefore == null ? 'once' : _repeatMode,
       repeatUntil: _reminderMinutesBefore == null || _repeatMode == 'once'
           ? null
           : _repeatUntil,
     );
 
-    var reminderDenied = false;
-    if (_reminderMinutesBefore != null) {
-      final granted =
-          await CalendarNotificationService.requestPermission();
-      reminderDenied = !granted;
+    if (_reminderMinutesBefore != null &&
+        !await CalendarAlarmService.hasPermission()) {
+      final granted = await navigator.push<bool>(
+        MaterialPageRoute(
+          builder: (_) => const NotificationPermissionScreen(),
+        ),
+      );
+      if (!mounted) return;
+      if (granted != true) {
+        setState(() => _saving = false);
+        messenger.showSnackBar(
+          SnackBar(content: Text(tr(context, 'Alarm was not scheduled.'))),
+        );
+        return;
+      }
     }
 
-    if (widget.eventToEdit == null) {
-      provider.addEvent(event);
-    } else {
-      provider.updateEvent(event);
-    }
+    final alarmScheduled = widget.eventToEdit == null
+        ? await provider.addEvent(event)
+        : await provider.updateEvent(event);
 
     if (!mounted) return;
-    if (reminderDenied) {
+    if (!alarmScheduled && event.hasAlarm) {
       messenger.showSnackBar(SnackBar(
         content: Text(tr(context,
-            'Reminder saved, but notifications are disabled. Enable them in Settings to receive it.')),
+            'Event saved, but its alarm could not be scheduled. Check permissions and try again.')),
       ));
     }
     navigator.pop();

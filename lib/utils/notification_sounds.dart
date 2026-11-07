@@ -1,156 +1,126 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart'
-    show RawResourceAndroidNotificationSound, AndroidNotificationSound;
 
-/// A selectable reminder sound.
+/// A selectable alarm tone for calendar alarms.
 ///
-/// Each tone maps to:
-///   • a raw resource bundled in `android/app/src/main/res/raw/` (Android),
-///   • a `.caf` sound bundled inside the app on iOS.
-///
-/// The resource name is what `flutter_local_notifications` expects as the
-/// `sound` parameter, and it is also stored on the event so the reminder can
-/// be restored after a reboot / reschedule.
-class NotificationTone {
-  /// Stable identifier persisted in the event JSON. Never change these.
+/// In the Alarm Clock model, tones map to:
+///   • asset path: `assets/sounds/<resource>.wav`
+///   • an audio asset that loops continuously with high priority / alarm volume
+///     until the user dismisses or snoozes the alarm.
+class AlarmTone {
+  /// Stable identifier persisted in the event JSON (`reminderSound` or `alarmSound`).
   final String id;
 
-  /// Android resource name (file name without extension in `res/raw`).
+  /// Wave file name without extension in `assets/sounds/`. Empty for system/default tone.
   final String resource;
-
-  /// iOS bundled sound file name.
-  final String iosSound;
 
   /// English label key — passed through `tr()` for French.
   final String label;
 
-  /// Icon shown in pickers.
+  /// Icon shown in tone pickers.
   final IconData icon;
 
-  const NotificationTone({
+  const AlarmTone({
     required this.id,
     required this.resource,
-    required this.iosSound,
     required this.label,
     required this.icon,
   });
+
+  /// Flutter asset path for the audio file (e.g. `assets/sounds/chime.wav`).
+  /// If resource is empty, uses `assets/sounds/beep.wav` as the standard loud alarm fallback.
+  String get assetPath => resource.isEmpty
+      ? 'assets/sounds/beep.wav'
+      : 'assets/sounds/$resource.wav';
 }
 
-/// The built-in tone library.
-///
-/// `default` keeps the device's own notification sound so users who never
-/// touch the setting hear exactly what the system normally plays.
-const List<NotificationTone> notificationTones = [
-  NotificationTone(
+/// The built-in alarm tone library.
+const List<AlarmTone> alarmTones = [
+  AlarmTone(
     id: 'default',
-    resource: '',
-    iosSound: 'default',
-    label: 'System default',
-    icon: Icons.notifications_active_outlined,
+    resource: 'beep',
+    label: 'Standard Alarm',
+    icon: Icons.alarm,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'chime',
     resource: 'chime',
-    iosSound: 'chime.caf',
     label: 'Soft chime',
     icon: Icons.music_note,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'bell',
     resource: 'bell',
-    iosSound: 'bell.caf',
     label: 'Bell',
     icon: Icons.notifications_none,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'bells',
     resource: 'bells',
-    iosSound: 'bells.caf',
     label: 'Church bells',
     icon: Icons.church_outlined,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'beep',
     resource: 'beep',
-    iosSound: 'beep.caf',
     label: 'Digital beep',
     icon: Icons.electric_bolt_outlined,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'marimba',
     resource: 'marimba',
-    iosSound: 'marimba.caf',
     label: 'Marimba',
     icon: Icons.piano_outlined,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'harp',
     resource: 'harp',
-    iosSound: 'harp.caf',
     label: 'Harp',
     icon: Icons.auto_awesome,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'drum',
     resource: 'drum',
-    iosSound: 'drum.caf',
     label: 'Drum',
     icon: Icons.timer_outlined,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'birds',
     resource: 'birds',
-    iosSound: 'birds.caf',
     label: 'Birds',
     icon: Icons.flutter_dash,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'hallelujah',
     resource: 'hallelujah',
-    iosSound: 'hallelujah.caf',
     label: 'Hallelujah',
     icon: Icons.celebration_outlined,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'piano',
     resource: 'piano',
-    iosSound: 'piano.caf',
     label: 'Piano',
     icon: Icons.music_video_outlined,
   ),
-  NotificationTone(
+  AlarmTone(
     id: 'water',
     resource: 'water',
-    iosSound: 'water.caf',
     label: 'Water drops',
     icon: Icons.water_drop_outlined,
   ),
 ];
 
-/// Looks up a tone by its persisted [id]; falls back to the system default.
-NotificationTone toneById(String? id) {
-  if (id == null) return notificationTones.first;
-  for (final tone in notificationTones) {
+/// Backward compatibility alias
+typedef NotificationTone = AlarmTone;
+const List<AlarmTone> notificationTones = alarmTones;
+
+/// Looks up an alarm tone by its persisted [id]; falls back to the default alarm.
+AlarmTone toneById(String? id) {
+  if (id == null) return alarmTones.first;
+  for (final tone in alarmTones) {
     if (tone.id == id) return tone;
   }
-  return notificationTones.first;
+  return alarmTones.first;
 }
 
-/// Android sound resource name for [id], or `null` for the system default.
-String? androidSoundFor(String? id) {
-  final resource = toneById(id).resource;
-  return resource.isEmpty ? null : resource;
-}
-
-/// [androidSoundFor] wrapped in the platform type the plugin expects, so the
-/// system default falls through when no bundled resource exists.
-AndroidNotificationSound? androidNotificationSoundFor(String? id) {
-  final resource = androidSoundFor(id);
-  return resource == null ? null : RawResourceAndroidNotificationSound(resource);
-}
-
-/// iOS sound filename for [id], or `null` for the system default.
-String? iosSoundFor(String? id) {
-  final sound = toneById(id).iosSound;
-  return sound == 'default' ? null : sound;
-}
+/// Returns the asset path to load in the audio player or alarm service.
+String alarmAssetPathFor(String? id) => toneById(id).assetPath;

@@ -1015,7 +1015,7 @@ class _DayViewPageState extends State<DayViewPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 6),
                         child: Icon(
-                          Icons.notifications_active_outlined,
+                          Icons.alarm,
                           size: 13,
                           color: theme.textTheme.bodySmall?.color,
                         ),

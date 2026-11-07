@@ -76,11 +76,21 @@ const Map<String, String> frenchStrings = {
   'Delete all events on this date': 'Supprimer tous les événements de ce jour',
   'Delete All Events': 'Tout supprimer',
   'Delete All': 'Tout supprimer',
-  'Are you sure you want to delete all events on this date?': 'Supprimer tous les événements de ce jour ?',
+  'Clear all events': 'Supprimer tous les événements',
+  'Clear all events?': 'Supprimer tous les événements ?',
+  'This will permanently delete {count} calendar events and cancel their alarms. This cannot be undone.':
+      'Cette action supprimera définitivement {count} événements de tous les calendriers et annulera leurs alarmes. Elle est irréversible.',
+  'Clear all': 'Tout supprimer',
+  '1 event deleted.': '1 événement supprimé.',
+  'Deleted {count} events.': '{count} événements supprimés.',
+  'Are you sure you want to delete all events on this date?':
+      'Supprimer tous les événements de ce jour ?',
   'Are you sure you want to delete this event?': 'Supprimer cet événement ?',
-  'Are you sure you want to delete this calendar? All events will also be deleted.': 'Supprimer ce calendrier et ses événements ?',
+  'Are you sure you want to delete this calendar? All events will also be deleted.':
+      'Supprimer ce calendrier et ses événements ?',
   'Delete Calendar': 'Supprimer le calendrier',
-  'No upcoming events. Add an event to start your agenda.': 'Aucun événement à venir. Ajoutez-en un.',
+  'No upcoming events. Add an event to start your agenda.':
+      'Aucun événement à venir. Ajoutez-en un.',
   'events': 'événements',
   'days': 'jours',
   'weeks': 'semaines',
@@ -93,7 +103,6 @@ const Map<String, String> frenchStrings = {
   'Special Days': 'Jours spéciaux',
   'No special days yet': 'Aucun jour spécial',
   'Tap + to add one': 'Appuyez sur + pour ajouter',
-  
 
   // ══════════════════════════════════════════════════════════════════
   // ADD / EDIT EVENT
@@ -115,8 +124,10 @@ const Map<String, String> frenchStrings = {
   '1.5 hours': '1 h 30',
   '2 hours': '2 heures',
   '3 hours': '3 heures',
-  'Reminder': 'Rappel',
-  'No reminder': 'Aucun rappel',
+  'Reminder': 'Alarme',
+  'No reminder': 'Aucune alarme',
+  'Alarm': 'Alarme',
+  'No alarm': 'Aucune alarme',
   'At event time': 'À l\'heure',
   '5 minutes before': '5 min avant',
   '10 minutes before': '10 min avant',
@@ -125,14 +136,34 @@ const Map<String, String> frenchStrings = {
   '1 hour before': '1 heure avant',
   '1 day before': '1 jour avant',
   'min before': 'min avant',
-  'Reminder sound': 'Son du rappel',
+  'Reminder sound': 'Sonnerie d\'alarme',
+  'Alarm sound': 'Sonnerie d\'alarme',
+  'Plays repeatedly at alarm volume': 'Sonne en boucle au volume alarme',
+  'Enforce alarm volume': 'Forcer le volume alarme',
+  'Keeps the alarm at full volume while it rings. Device settings may affect playback.':
+      'Maintient le volume maximal pendant la sonnerie. Les réglages de l’appareil peuvent modifier la lecture.',
   'Plays at alarm volume': 'Volume alarme',
   'Preview': 'Écouter',
-  'Show over lock screen': 'Sur l\'écran verrouillé',
-  'Pops up even when the phone is locked': 'Pop-up quand verrouillé',
-  'Ring multiple times': 'Sonner plusieurs fois',
-  'Rings 5 times over 2 minutes so you don\'t miss it': '5 sonneries sur 2 min',
-  'Available for one-time events only': 'Uniquement pour événements uniques',
+  'Stop Alarm': 'Arrêter l\'alarme',
+  'Snooze duration': 'Durée du rappel',
+  'Snooze for': 'Répéter pendant',
+  'minutes': 'minutes',
+  'Event time': 'Heure de l’événement',
+  'ALARM RINGING': 'ALARME EN COURS',
+  'Calendar Alarm': 'Alarme Calendrier',
+  'Enable event alarms': 'Activer les alarmes d’événement',
+  'Allow notifications and exact alarm access so this event reminder can ring close to its scheduled time. Without exact-alarm access, Android may deliver it late. A standard notification is used; lock-screen display and sound can also depend on device settings.':
+      'Autorisez les notifications et les alarmes exactes pour que ce rappel sonne à l’heure prévue. Sans accès aux alarmes exactes, Android peut retarder le rappel. Une notification standard est utilisée ; l’affichage sur l’écran verrouillé et le son dépendent aussi de l’appareil.',
+  'Allow notifications and Alarms & reminders access in system settings. Without exact-alarm access, Android may deliver reminders late.':
+      'Autorisez les notifications et l’accès « Alarmes et rappels » dans les paramètres. Sans accès aux alarmes exactes, Android peut retarder les rappels.',
+  'Open settings': 'Ouvrir les paramètres',
+  'All-day event alarms ring at 9:00 AM local time.':
+      'Les alarmes des événements sur toute la journée sonnent à 9 h, heure locale.',
+  'Alarm was not scheduled.': 'L’alarme n’a pas été programmée.',
+  'Event saved, but its alarm could not be scheduled. Check permissions and try again.':
+      'Événement enregistré, mais son alarme n’a pas pu être programmée. Vérifiez les autorisations et réessayez.',
+  'Allow notifications and exact timing for event alarms':
+      'Autoriser les notifications et le déclenchement précis des alarmes d’événement',
   'Repeat': 'Répéter',
   'Once': 'Une fois',
   'Every day': 'Chaque jour',
@@ -148,7 +179,8 @@ const Map<String, String> frenchStrings = {
   'Save Event': 'Enregistrer',
   'Update Event': 'Mettre à jour',
   'Clear': 'Effacer',
-  'Full-screen popup saved. Allow the permission in system settings to enable it.': 'Pop-up enregistré. Autorisez-le dans les réglages.',
+  'Full-screen popup saved. Allow the permission in system settings to enable it.':
+      'Pop-up enregistré. Autorisez-le dans les réglages.',
   'Select Biblical Time': 'Heure biblique',
   'Biblical (sunrise-based)': 'Biblique',
   '12-hour': '12 heures',
@@ -166,7 +198,8 @@ const Map<String, String> frenchStrings = {
   'Schedule': 'Programme',
   'Night hours': 'Heures de nuit',
   'Now': 'Maintenant',
-  'A free day. Add an event to make it count.': 'Journée libre. Ajoutez un événement.',
+  'A free day. Add an event to make it count.':
+      'Journée libre. Ajoutez un événement.',
   'Nothing scheduled': 'Rien de prévu',
   'No timed events': 'Aucun événement horaire',
   'Until': 'Jusqu\'au',
@@ -179,7 +212,8 @@ const Map<String, String> frenchStrings = {
   // ══════════════════════════════════════════════════════════════════
   // AGENDA
   // ══════════════════════════════════════════════════════════════════
-  'Search events by title, notes, or date': 'Rechercher par titre, notes ou date',
+  'Search events by title, notes, or date':
+      'Rechercher par titre, notes ou date',
   'All': 'Tout',
   'This week': 'Cette semaine',
   'This month': 'Ce mois',
@@ -188,8 +222,10 @@ const Map<String, String> frenchStrings = {
   'No events yet': 'Aucun événement',
   'No matches': 'Aucun résultat',
   'Nothing in this period': 'Rien sur cette période',
-  'Tap + to add your first event and it will appear here.': 'Appuyez sur + pour ajouter votre premier événement.',
-  'Try a different search or clear your filters.': 'Essayez une autre recherche ou effacez les filtres.',
+  'Tap + to add your first event and it will appear here.':
+      'Appuyez sur + pour ajouter votre premier événement.',
+  'Try a different search or clear your filters.':
+      'Essayez une autre recherche ou effacez les filtres.',
   'Try another date range or tap All.': 'Essayez une autre période ou Tout.',
   'Clear filters': 'Effacer les filtres',
 
@@ -217,18 +253,35 @@ const Map<String, String> frenchStrings = {
   'Display seconds in times': 'Secondes dans l\'heure',
   'Day/Night Indicator': 'Indicateur jour/nuit',
   'Show sun/moon icons': 'Icônes soleil/lune',
-  'Notifications': 'Notifications',
+  'Notifications': 'Alarmes',
+  'Alarms': 'Alarmes',
+  'Alarm permissions': 'Autorisations d\'alarme',
+  'Grant permissions for exact, loud calendar alarms':
+      'Autoriser les alarmes de calendrier',
+  'Alarm permission granted': 'Autorisations accordées',
+  'Alarms are disabled in system settings':
+      'Alarmes désactivées dans les réglages',
+  'Test alarm sound': 'Tester le réveil',
+  'Test looping alarm audio, vibration, and stop controls':
+      'Tester le son en boucle, la vibration et l\'arrêt',
+  'Enable alarm permissions in Android settings first':
+      'Activez les permissions d\'alarme d\'abord',
+  'Alarm saved. Please ensure alarm permissions are allowed in system settings.':
+      'Alarme enregistrée. Vérifiez les permissions dans les réglages.',
   'Allow notifications': 'Autoriser',
   'Request permission for audible calendar alerts': 'Autoriser les alertes',
   'Notification permission granted': 'Notifications accordées',
   'Notifications are disabled in system settings': 'Notifications désactivées',
   'Test notification sound': 'Tester le son',
   'Send a test alert to verify delivery and sound': 'Tester la réception',
-  'Enable notifications in Android settings first': 'Activez d\'abord les notifications',
-  'Reminder saved, but notifications are disabled. Enable them in Settings to receive it.': 'Rappel enregistré. Activez les notifications.',
+  'Enable notifications in Android settings first':
+      'Activez d\'abord les notifications',
+  'Reminder saved, but notifications are disabled. Enable them in Settings to receive it.':
+      'Rappel enregistré. Activez les notifications.',
   'Storage': 'Stockage',
   'Auto-delete old events': 'Suppression auto',
-  'Automatically remove events that ended more than the selected period ago. Keeps your calendar clean without manual deleting.': 'Supprime automatiquement les anciens événements.',
+  'Automatically remove events that ended more than the selected period ago. Keeps your calendar clean without manual deleting.':
+      'Supprime automatiquement les anciens événements.',
   'Delete after': 'Supprimer après',
   'Never': 'Jamais',
   '30 days': '30 jours',
@@ -239,8 +292,10 @@ const Map<String, String> frenchStrings = {
   'event removed': 'événement supprimé',
   'events removed': 'événements supprimés',
   'Delete old events now': 'Supprimer maintenant',
-  'Runs the cleanup immediately with the current setting': 'Nettoyer tout de suite',
-  'Set an auto-delete period first, or choose Never to keep all events.': 'Choisissez une période ou Jamais.',
+  'Runs the cleanup immediately with the current setting':
+      'Nettoyer tout de suite',
+  'Set an auto-delete period first, or choose Never to keep all events.':
+      'Choisissez une période ou Jamais.',
   'Nothing to clean up': 'Rien à nettoyer',
   'Replay app tour': 'Revoir la visite',
   'A quick guide to the main features': 'Guide des fonctions',
@@ -257,47 +312,62 @@ const Map<String, String> frenchStrings = {
   'Reset All Data': 'Tout réinitialiser',
   'Delete all calendars and events': 'Supprimer tout',
   'Reset': 'Réinitialiser',
-  'A fully customizable calendar app with dual-calendar support and Christian tools.': 'Calendrier personnalisable avec outils chrétiens.',
-  'Are you sure you want to delete all calendars and events? This cannot be undone.': 'Supprimer tout ? Cette action est irréversible.',
+  'A fully customizable calendar app with dual-calendar support and Christian tools.':
+      'Calendrier personnalisable avec outils chrétiens.',
+  'Are you sure you want to delete all calendars and events? This cannot be undone.':
+      'Supprimer tout ? Cette action est irréversible.',
   'Learn about each calendar in the app': 'Découvrez chaque calendrier',
   'Add a calendar': 'Ajouter un calendrier',
-  'Tap a calendar type to add it instantly. Calendars you already have appear with a checkmark.': 'Touchez un type pour l\'ajouter.',
-  'Tap a calendar type to add it instantly. You can rename it later.': 'Touchez un type pour l\'ajouter.',
+  'Tap a calendar type to add it instantly. Calendars you already have appear with a checkmark.':
+      'Touchez un type pour l\'ajouter.',
+  'Tap a calendar type to add it instantly. You can rename it later.':
+      'Touchez un type pour l\'ajouter.',
   'already added': 'déjà ajouté',
   'Added': 'Ajouté',
   'No preset calendars available.': 'Aucun modèle disponible.',
   'Create a custom calendar': 'Créer un calendrier',
-  'Design your own months, week length, and day names': 'Personnalisez mois, semaine et jours',
+  'Design your own months, week length, and day names':
+      'Personnalisez mois, semaine et jours',
 
   // ══════════════════════════════════════════════════════════════════
   // NOTIFICATION PERMISSION SCREEN
   // ══════════════════════════════════════════════════════════════════
+  'Alarms enabled': 'Alarmes activées',
+  'Alarms are off': 'Alarmes désactivées',
+  'You can turn alarms back on later in your device settings. Without exact alarm permissions, alarms will not ring when the phone is locked.':
+      'Vous pouvez réactiver les alarmes dans les paramètres. Sans accès aux alarmes exactes, Android peut retarder les rappels.',
   'Never miss a moment': 'Ne manquez rien',
-  'Allow notifications so your calendar reminders can ring with sound and vibration at the right time.': 'Autorisez les notifications pour les rappels.',
+  'Allow notifications so your calendar reminders can ring with sound and vibration at the right time.':
+      'Autorisez les notifications pour les rappels.',
   'Enable notifications': 'Activer',
   'Not now': 'Plus tard',
   'Notifications enabled': 'Notifications activées',
   'Notifications are off': 'Notifications désactivées',
-  'You can turn notifications back on later in your device settings. Without them, your reminders will not ring.': 'Réactivez-les dans les réglages. Sinon, vos rappels ne sonneront pas.',
+  'You can turn notifications back on later in your device settings. Without them, your reminders will not ring.':
+      'Réactivez-les dans les réglages. Sinon, vos rappels ne sonneront pas.',
   'Later': 'Plus tard',
-  'Open settings': 'Ouvrir les réglages',
 
   // ══════════════════════════════════════════════════════════════════
   // APP TOUR
   // ══════════════════════════════════════════════════════════════════
   'Welcome to Universal Calendar': 'Bienvenue sur Calendrier universel',
-  'A calendar for every reckoning — Gregorian, Ethiopian, Biblical, Islamic, Julian, and your own designs.': 'Un calendrier pour chaque système — grégorien, éthiopien, biblique, islamique, julien et vos propres créations.',
+  'A calendar for every reckoning — Gregorian, Ethiopian, Biblical, Islamic, Julian, and your own designs.':
+      'Un calendrier pour chaque système — grégorien, éthiopien, biblique, islamique, julien et vos propres créations.',
   'Your calendars, together': 'Vos calendriers, ensemble',
-  'Switch between calendars and compare dates without losing your place — the day you selected stays synced across every calendar.': 'Passez d\'un calendrier à l\'autre sans perdre le fil.',
+  'Switch between calendars and compare dates without losing your place — the day you selected stays synced across every calendar.':
+      'Passez d\'un calendrier à l\'autre sans perdre le fil.',
   'Build a calendar your way': 'Créez votre calendrier',
-  'Pick from templates, name your days and months, set month lengths, leap-year rules, and year numbering.': 'Modèles, noms des jours, longueurs de mois, règles bissextiles et numérotation.',
+  'Pick from templates, name your days and months, set month lengths, leap-year rules, and year numbering.':
+      'Modèles, noms des jours, longueurs de mois, règles bissextiles et numérotation.',
   'Biblical time is built in': 'Le temps biblique inclus',
-  'The day view can show biblical hours. Set your sunrise hour (6 or 7 AM) in Settings to align the 1st Hour with dawn.': 'Configurez le lever du soleil pour aligner les heures bibliques.',
+  'The day view can show biblical hours. Set your sunrise hour (6 or 7 AM) in Settings to align the 1st Hour with dawn.':
+      'Configurez le lever du soleil pour aligner les heures bibliques.',
   'Never miss a reminder': 'Ne manquez aucun rappel',
-  'Grant notification permission and each event can ring with sound and vibration. Tap "Test notification sound" in Settings to verify.': 'Autorisez les notifications pour que vos événements sonnent.',
+  'Choose an alarm when saving an event. Notifications and precise timing are requested only when you need them; test a tone in Settings.':
+      'Choisissez une alarme en enregistrant un événement. Les notifications et le déclenchement précis ne sont demandés que si nécessaire ; testez une sonnerie dans les paramètres.',
   'Your data is yours': 'Vos données vous appartiennent',
-  'Backup as JSON, export to .ics, or duplicate a calendar — from Settings or the Calendars screen. Import into Google or Apple Calendar any time.': 'Sauvegardez en JSON, exportez en .ics ou dupliquez.',
-  
+  'Back up as JSON or duplicate a calendar — from Settings or the Calendars screen.':
+      'Sauvegardez en JSON ou dupliquez un calendrier depuis les paramètres ou l’écran Calendriers.',
 
   // ══════════════════════════════════════════════════════════════════
   // PDF EXPORT
@@ -319,17 +389,21 @@ const Map<String, String> frenchStrings = {
   'Months': 'Mois',
   'Refresh preview': 'Actualiser',
   'Craft an elegant PDF': 'Créez un PDF élégant',
-  'Export your events, or the full year calendar, as a beautifully crafted document.': 'Exportez vos événements ou le calendrier annuel.',
+  'Export your events, or the full year calendar, as a beautifully crafted document.':
+      'Exportez vos événements ou le calendrier annuel.',
   'Year to export': 'Année à exporter',
-  'Grids render all 12 Gregorian months of that year.': 'Grilles des 12 mois de l\'année.',
+  'Grids render all 12 Gregorian months of that year.':
+      'Grilles des 12 mois de l\'année.',
   'Layout': 'Mise en page',
   '2 per page': '2 / page',
   '1 per page': '1 / page',
   'Details': 'Détails',
   'Event markers': 'Marqueurs d\'événements',
-  'A coloured bar on days with events': 'Barre colorée les jours avec événements',
+  'A coloured bar on days with events':
+      'Barre colorée les jours avec événements',
   'Secondary': 'Secondaire',
-  'Each cell shows the Gregorian date and, if configured, the secondary calendar\'s date.': 'Chaque cellule montre la date grégorienne et, si configurée, la date secondaire.',
+  'Each cell shows the Gregorian date and, if configured, the secondary calendar\'s date.':
+      'Chaque cellule montre la date grégorienne et, si configurée, la date secondaire.',
   'Include cover page': 'Page de couverture',
   'Include events': 'Inclure les événements',
   'Include special days': 'Inclure les jours spéciaux',
@@ -350,7 +424,8 @@ const Map<String, String> frenchStrings = {
   // CREATE CALENDAR WIZARD
   // ══════════════════════════════════════════════════════════════════
   'Choose a starting template': 'Modèle de départ',
-  'Select a predefined calendar structure or start from scratch.': 'Structure prédéfinie ou de zéro.',
+  'Select a predefined calendar structure or start from scratch.':
+      'Structure prédéfinie ou de zéro.',
   'Name your calendar': 'Nommer le calendrier',
   'Calendar Name': 'Nom',
   'Year Structure': 'Structure de l\'année',
@@ -360,7 +435,8 @@ const Map<String, String> frenchStrings = {
   'Custom pattern': 'Personnalisée',
   'Leap Year Rule': 'Années bissextiles',
   'Months & Days': 'Mois et jours',
-  'Customize the names and lengths of every month. Drag to reorder.': 'Personnalisez noms et durées.',
+  'Customize the names and lengths of every month. Drag to reorder.':
+      'Personnalisez noms et durées.',
   'Weekday names': 'Noms des jours',
   'Add Month': 'Ajouter un mois',
   'Distribute evenly': 'Répartir',
@@ -407,11 +483,8 @@ const Map<String, String> frenchStrings = {
   'Week starts on': 'La semaine commence le',
   'Structural options': 'Options',
   'Export calendar': 'Exporter',
-  'Export as .ics': 'Exporter en .ics',
-  'Export as CSV': 'Exporter en CSV',
   'Duplicate calendar': 'Dupliquer',
   'Copy backup': 'Copier la sauvegarde',
-  'Exported to clipboard': 'Exporté',
   'Calendar duplicated': 'Calendrier dupliqué',
   'Time & Finish': 'Heure et fin',
   'Go to Settings': 'Aller aux paramètres',
@@ -423,14 +496,16 @@ const Map<String, String> frenchStrings = {
   // ══════════════════════════════════════════════════════════════════
   // CALENDAR EXPLAINER
   // ══════════════════════════════════════════════════════════════════
-  'Learn the origin, structure, and use of every calendar this app supports.': 'Origine, structure et usage des calendriers.',
+  'Learn the origin, structure, and use of every calendar this app supports.':
+      'Origine, structure et usage des calendriers.',
   'Tap to read more': 'Appuyez pour en savoir plus',
   'Origin': 'Origine',
   'Structure': 'Structure',
   'Leap Year': 'Année bissextile',
   'Key Facts': 'Faits essentiels',
   'When to Use': 'Quand l\'utiliser',
-  'Dates shown are approximate for historical calendars. Modern observance may vary by community.': 'Dates approximatives pour les calendriers historiques.',
+  'Dates shown are approximate for historical calendars. Modern observance may vary by community.':
+      'Dates approximatives pour les calendriers historiques.',
   'The international civil calendar': 'Le calendrier civil international',
   'The pre-1582 Roman calendar': 'Le calendrier romain avant 1582',
   'The calendar of Ethiopia and Eritrea': 'Le calendrier éthiopien',
@@ -478,11 +553,14 @@ const Map<String, String> frenchStrings = {
   'Water': 'Eau',
   'Chime': 'Carillon',
   'Default alert tone for new events': 'Son par défaut',
-  'Pick the tone used by default. Each event can still override it.': 'Son par défaut. Modifiable par événement.',
-  'Tap a tone to hear it, then confirm.': 'Touchez pour écouter, puis confirmez.',
+  'Pick the tone used by default. Each event can still override it.':
+      'Son par défaut. Modifiable par événement.',
+  'Tap a tone to hear it, then confirm.':
+      'Touchez pour écouter, puis confirmez.',
   'System default sound': 'Son du système',
   'Notifications are working': 'Notifications OK',
-  'Universal Calendar can play reminder sounds on this device.': 'Sons de rappel disponibles.',
+  'Universal Calendar can play reminder sounds on this device.':
+      'Sons de rappel disponibles.',
   'Calendar alerts': 'Alertes',
 
   // ══════════════════════════════════════════════════════════════════
@@ -509,11 +587,14 @@ const Map<String, String> frenchStrings = {
   'Retry': 'Réessayer',
   'Required': 'Requis',
   'Optional': 'Optionnel',
-    // ── Backup (file-based) ─────────────────────────────────────────
+  // ── Backup (file-based) ─────────────────────────────────────────
   'Export backup': 'Exporter',
-  'Creates a .json file and opens the share sheet': 'Créer un fichier et partager',
+  'Creates a .json file and opens the share sheet':
+      'Créer un fichier et partager',
   'Import backup': 'Importer',
-  'Picks a .json file and restores your calendars and events': 'Choisir un fichier à restaurer',
+  'Picks a .json file and restores your calendars and events':
+      'Choisir un fichier à restaurer',
   'Universal Calendar backup': 'Sauvegarde Calendrier universel',
-  'This will replace all current calendars and events with the contents of the backup file. Continue?': 'Remplace tout le contenu actuel par le fichier. Continuer ?',
+  'This will replace all current calendars and events with the contents of the backup file. Continue?':
+      'Remplace tout le contenu actuel par le fichier. Continuer ?',
 };

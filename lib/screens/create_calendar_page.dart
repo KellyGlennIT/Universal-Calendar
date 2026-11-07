@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../models/calendar_model.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/locale_provider.dart';
-import '../services/export_service.dart';
 import '../utils/calendar_math.dart';
 import '../l10n/tr.dart';
 
@@ -980,6 +979,11 @@ class _CreateCalendarPageState extends State<CreateCalendarPage> {
     );
   }
 
+  String _colorToHex(Color color) {
+    final rgb = color.toARGB32() & 0xFFFFFF;
+    return '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+  }
+
   void _createCalendar() {
     // Day boundaries are always midnight in the current engine, so the
     // wizard no longer exposes a Day Start control that would mislead users
@@ -1018,7 +1022,7 @@ class _CreateCalendarPageState extends State<CreateCalendarPage> {
       showSeconds: _showSeconds,
       showMilliseconds: _showMilliseconds,
       yearOffset: _yearOffset,
-      colorHex: ExportService.colorToHex(_selectedColor),
+      colorHex: _colorToHex(_selectedColor),
       emoji: _selectedEmoji,
     );
     Provider.of<CalendarProvider>(context, listen: false)

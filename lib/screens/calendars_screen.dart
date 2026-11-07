@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/calendar_model.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/locale_provider.dart';
-import '../services/export_service.dart';
 import '../l10n/tr.dart';
 import 'calendar_explainer_page.dart';
 import 'create_calendar_page.dart';
@@ -91,23 +89,6 @@ class CalendarsScreen extends StatelessWidget {
                             _handleMenu(context, provider, cal, value),
                         itemBuilder: (context) => [
                           PopupMenuItem(
-                            value: 'export_ics',
-                            child: Row(children: const [
-                              Icon(Icons.file_download_outlined, size: 20),
-                              SizedBox(width: 12),
-                              Text('Export as .ics'),
-                            ]),
-                          ),
-                          PopupMenuItem(
-                            value: 'export_csv',
-                            child: Row(children: const [
-                              Icon(Icons.table_view_outlined, size: 20),
-                              SizedBox(width: 12),
-                              Text('Export as CSV'),
-                            ]),
-                          ),
-                          const PopupMenuDivider(),
-                          PopupMenuItem(
                             value: 'special_days',
                             child: Row(children: const [
                               Icon(Icons.star_outline, size: 20),
@@ -173,30 +154,6 @@ class CalendarsScreen extends StatelessWidget {
     String value,
   ) async {
     switch (value) {
-      case 'export_ics':
-        final ics = ExportService.generateIcs(
-          calendar: cal,
-          events: provider.eventsForCalendar(cal.id),
-        );
-        await Clipboard.setData(ClipboardData(text: ics));
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(tr(context, 'Exported to clipboard')),
-            duration: const Duration(seconds: 3),
-          ));
-        }
-        break;
-      case 'export_csv':
-        final csv =
-            ExportService.generateCsv(provider.eventsForCalendar(cal.id));
-        await Clipboard.setData(ClipboardData(text: csv));
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(tr(context, 'Exported to clipboard')),
-            duration: const Duration(seconds: 3),
-          ));
-        }
-        break;
       case 'special_days':
         if (context.mounted) {
           Navigator.push(

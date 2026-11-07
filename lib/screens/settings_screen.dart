@@ -18,9 +18,8 @@ class SettingsScreen extends StatelessWidget {
     final provider = Provider.of<CalendarProvider>(context);
 
     final addedNames = provider.calendars.map((c) => c.name).toSet();
-    final addedPresetCount = calendarPresets.values
-        .where((p) => addedNames.contains(p.name))
-        .length;
+    final addedPresetCount =
+        calendarPresets.values.where((p) => addedNames.contains(p.name)).length;
     final totalPresetCount = calendarPresets.length;
 
     return Scaffold(
@@ -86,8 +85,7 @@ class SettingsScreen extends StatelessWidget {
               value: provider.secondaryCalendarId,
               hint: Text(tr(context, 'None')),
               items: [
-                DropdownMenuItem(
-                    value: null, child: Text(tr(context, 'None'))),
+                DropdownMenuItem(value: null, child: Text(tr(context, 'None'))),
                 ...provider.calendars.map((cal) =>
                     DropdownMenuItem(value: cal.id, child: Text(cal.name))),
               ],
@@ -103,20 +101,18 @@ class SettingsScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     tr(context, 'Add a calendar'),
-                    style:
-                        Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .primaryColor
-                        .withValues(alpha: 0.12),
+                    color:
+                        Theme.of(context).primaryColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -163,8 +159,7 @@ class SettingsScreen extends StatelessWidget {
                         final isAdded = addedNames.contains(preset.name);
                         return FilterChip(
                           avatar: isAdded
-                              ? Icon(Icons.check_circle,
-                                  size: 16, color: color)
+                              ? Icon(Icons.check_circle, size: 16, color: color)
                               : Text(preset.emoji,
                                   style: const TextStyle(fontSize: 14)),
                           label: Text(
@@ -172,16 +167,14 @@ class SettingsScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 12,
                               color: isAdded ? Colors.grey : color,
-                              fontWeight: isAdded
-                                  ? FontWeight.w500
-                                  : FontWeight.w600,
+                              fontWeight:
+                                  isAdded ? FontWeight.w500 : FontWeight.w600,
                             ),
                           ),
                           selected: isAdded,
                           showCheckmark: false,
                           backgroundColor: color.withValues(alpha: 0.10),
-                          selectedColor:
-                              Colors.grey.withValues(alpha: 0.15),
+                          selectedColor: Colors.grey.withValues(alpha: 0.15),
                           side: BorderSide(
                             color: isAdded
                                 ? Colors.grey.withValues(alpha: 0.35)
@@ -202,8 +195,7 @@ class SettingsScreen extends StatelessWidget {
                               );
                               return;
                             }
-                            final cal =
-                                provider.addPresetCalendar(entry.key);
+                            final cal = provider.addPresetCalendar(entry.key);
                             if (cal != null && context.mounted) {
                               ScaffoldMessenger.of(context)
                                   .hideCurrentSnackBar();
@@ -233,38 +225,31 @@ class SettingsScreen extends StatelessWidget {
                       child: Row(
                         children: [
                           Icon(Icons.add_circle_outline,
-                              color: Theme.of(context).primaryColor,
-                              size: 20),
+                              color: Theme.of(context).primaryColor, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  tr(context,
-                                      'Create a custom calendar'),
+                                  tr(context, 'Create a custom calendar'),
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color:
-                                        Theme.of(context).primaryColor,
+                                    color: Theme.of(context).primaryColor,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   tr(context,
                                       'Design your own months, week length, and day names'),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall,
+                                  style: Theme.of(context).textTheme.bodySmall,
                                 ),
                               ],
                             ),
                           ),
                           Icon(Icons.chevron_right,
-                              color: Theme.of(context).primaryColor,
-                              size: 20),
+                              color: Theme.of(context).primaryColor, size: 20),
                         ],
                       ),
                     ),
@@ -286,15 +271,13 @@ class SettingsScreen extends StatelessWidget {
               hint: Text(tr(context, 'Calendar default')),
               items: [
                 DropdownMenuItem(
-                    value: null,
-                    child: Text(tr(context, 'Calendar default'))),
+                    value: null, child: Text(tr(context, 'Calendar default'))),
                 DropdownMenuItem(
                     value: '12h', child: Text(tr(context, '12-hour'))),
                 DropdownMenuItem(
                     value: '24h', child: Text(tr(context, '24-hour'))),
                 DropdownMenuItem(
-                    value: 'biblical',
-                    child: Text(tr(context, 'Biblical'))),
+                    value: 'biblical', child: Text(tr(context, 'Biblical'))),
               ],
               onChanged: (value) => provider.setGlobalTimeFormat(value),
             ),
@@ -330,48 +313,44 @@ class SettingsScreen extends StatelessWidget {
             onChanged: provider.setShowDayNight,
           ),
 
-          // ── Notifications ─────────────────────────────────────────────
-          _section(context, tr(context, 'Notifications')),
+          // ── Alarms ────────────────────────────────────────────────────
+          _section(context, tr(context, 'Alarms')),
           _card(
             context,
-            icon: Icons.notifications_active_outlined,
-            title: tr(context, 'Allow notifications'),
+            icon: Icons.alarm_on,
+            title: tr(context, 'Alarm permissions'),
             subtitle: tr(context,
-                'Request permission for audible calendar alerts'),
+                'Allow notifications and exact timing for event alarms'),
             onTap: () async {
-              final granted =
-                  await CalendarNotificationService.requestPermission();
+              final granted = await CalendarAlarmService.requestPermission();
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text(
                   granted
-                      ? tr(context, 'Notification permission granted')
-                      : tr(context,
-                          'Notifications are disabled in system settings'),
+                      ? tr(context, 'Alarm permission granted')
+                      : tr(context, 'Alarms are disabled in system settings'),
                 ),
               ));
               if (granted) {
                 provider.rescheduleReminders();
-                await CalendarNotificationService.sendTestNotification();
               }
             },
           ),
           _card(
             context,
             icon: Icons.volume_up_outlined,
-            title: tr(context, 'Test notification sound'),
+            title: tr(context, 'Test alarm sound'),
             subtitle: tr(context,
-                'Send a test alert to verify delivery and sound'),
+                'Test looping alarm audio, vibration, and stop controls'),
             onTap: () async {
-              final granted =
-                  await CalendarNotificationService.requestPermission();
+              final granted = await CalendarAlarmService.requestPermission();
               if (granted) {
                 provider.rescheduleReminders();
-                await CalendarNotificationService.sendTestNotification();
+                await CalendarAlarmService.sendTestNotification();
               } else if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   content: Text(tr(context,
-                      'Enable notifications in Android settings first')),
+                      'Enable alarm permissions in Android settings first')),
                 ));
               }
             },
@@ -424,23 +403,17 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     items: [
                       DropdownMenuItem(
-                          value: null,
-                          child: Text(tr(context, 'Never'))),
+                          value: null, child: Text(tr(context, 'Never'))),
                       DropdownMenuItem(
-                          value: 30,
-                          child: Text(tr(context, '30 days'))),
+                          value: 30, child: Text(tr(context, '30 days'))),
                       DropdownMenuItem(
-                          value: 60,
-                          child: Text(tr(context, '60 days'))),
+                          value: 60, child: Text(tr(context, '60 days'))),
                       DropdownMenuItem(
-                          value: 90,
-                          child: Text(tr(context, '90 days'))),
+                          value: 90, child: Text(tr(context, '90 days'))),
                       DropdownMenuItem(
-                          value: 180,
-                          child: Text(tr(context, '180 days'))),
+                          value: 180, child: Text(tr(context, '180 days'))),
                       DropdownMenuItem(
-                          value: 365,
-                          child: Text(tr(context, '1 year'))),
+                          value: 365, child: Text(tr(context, '1 year'))),
                     ],
                     onChanged: (v) async {
                       await provider.setAutoCleanupDays(v);
@@ -499,8 +472,7 @@ class SettingsScreen extends StatelessWidget {
             subtitle: tr(context, 'Learn about each calendar in the app'),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const CalendarExplainerPage()),
+              MaterialPageRoute(builder: (_) => const CalendarExplainerPage()),
             ),
           ),
           _card(
@@ -519,8 +491,8 @@ class SettingsScreen extends StatelessWidget {
             context,
             icon: Icons.ios_share_rounded,
             title: tr(context, 'Export backup'),
-            subtitle: tr(context,
-                'Creates a .json file and opens the share sheet'),
+            subtitle:
+                tr(context, 'Creates a .json file and opens the share sheet'),
             onTap: () async {
               try {
                 final payload = provider.getBackupPayload();
@@ -675,8 +647,7 @@ class SettingsScreen extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: SwitchListTile(
-        secondary:
-            Icon(Icons.toggle_on, color: Theme.of(context).primaryColor),
+        secondary: Icon(Icons.toggle_on, color: Theme.of(context).primaryColor),
         title: Text(title),
         subtitle: Text(subtitle),
         value: value,

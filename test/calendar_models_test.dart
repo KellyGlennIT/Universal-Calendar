@@ -367,6 +367,36 @@ void main() {
       expect(provider.secondaryCalendarId, isNull);
     });
 
+    test('clearAllEvents removes and persists every event', () async {
+      SharedPreferences.setMockInitialValues({});
+      final provider = CalendarProvider();
+      await _waitFor(() => !provider.isLoading);
+      final otherCalendarId = provider.calendars[1].id;
+
+      provider.addEvent(CalendarEvent(
+        id: 'first-event',
+        title: 'First',
+        date: '2026-01-01',
+        time: '10:00',
+        notes: '',
+        calendarId: provider.calendars.first.id,
+      ));
+      provider.addEvent(CalendarEvent(
+        id: 'second-event',
+        title: 'Second',
+        date: '2026-01-02',
+        time: '11:00',
+        notes: '',
+        calendarId: otherCalendarId,
+      ));
+
+      expect(await provider.clearAllEvents(), 2);
+      expect(provider.events, isEmpty);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('events'), '[]');
+      expect(await provider.clearAllEvents(), 0);
+    });
+
     test('findEventById returns null for unknown ids', () async {
       final provider = CalendarProvider();
       await _waitFor(() => !provider.isLoading);

@@ -60,8 +60,8 @@ class CalendarProvider extends ChangeNotifier {
 
   // ── Multi-day aware: events covering the currently selected date ───
   List<CalendarEvent> get eventsForSelectedDate {
-    final day = DateTime(
-        _selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final day =
+        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
     return _events.where((e) {
       if (_selectedCalendarId.isNotEmpty &&
           e.calendarId != _selectedCalendarId) {
@@ -91,8 +91,7 @@ class CalendarProvider extends ChangeNotifier {
     try {
       final startParts = e.date.split('-').map(int.parse).toList();
       if (startParts.length != 3) return false;
-      final start =
-          DateTime(startParts[0], startParts[1], startParts[2]);
+      final start = DateTime(startParts[0], startParts[1], startParts[2]);
       final endStr =
           (e.endDate == null || e.endDate!.isEmpty) ? e.date : e.endDate!;
       final endParts = endStr.split('-').map(int.parse).toList();
@@ -159,7 +158,13 @@ class CalendarProvider extends ChangeNotifier {
       _selectedDate = _anchorDate;
       _recalculateCurrentMonthYear();
       for (final event in _events) {
-        unawaited(CalendarNotificationService.scheduleEvent(event));
+        unawaited(CalendarNotificationService.scheduleEvent(event).then(
+          (scheduled) {
+            if (!scheduled) {
+              debugPrint('Could not schedule alarm for event ${event.id}.');
+            }
+          },
+        ));
       }
     } catch (e) {
       debugPrint('Load error: $e');
@@ -521,21 +526,25 @@ class CalendarProvider extends ChangeNotifier {
 
   // ── Event CRUD ───────────────────────────────────────────────────────
 
-  void addEvent(CalendarEvent event) {
+  Future<bool> addEvent(CalendarEvent event) {
     _events.add(event);
-    unawaited(CalendarNotificationService.scheduleEvent(event));
+    final alarmScheduled = CalendarNotificationService.scheduleEvent(event);
     _saveData();
     notifyListeners();
+    return alarmScheduled;
   }
 
-  void updateEvent(CalendarEvent updatedEvent) {
+  Future<bool> updateEvent(CalendarEvent updatedEvent) {
     final idx = _events.indexWhere((e) => e.id == updatedEvent.id);
     if (idx != -1) {
       _events[idx] = updatedEvent;
-      unawaited(CalendarNotificationService.scheduleEvent(updatedEvent));
+      final alarmScheduled =
+          CalendarNotificationService.scheduleEvent(updatedEvent);
       _saveData();
       notifyListeners();
+      return alarmScheduled;
     }
+    return Future.value(false);
   }
 
   void deleteEvent(String id) {
@@ -545,10 +554,27 @@ class CalendarProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<int> clearAllEvents() async {
+    final deletedCount = _events.length;
+    if (deletedCount == 0) return 0;
+
+    await CalendarNotificationService.cancelAll();
+    _events.clear();
+    await _saveData();
+    notifyListeners();
+    return deletedCount;
+  }
+
   void rescheduleReminders() {
     for (final event in _events) {
       if (event.reminderMinutesBefore != null) {
-        unawaited(CalendarNotificationService.scheduleEvent(event));
+        unawaited(CalendarNotificationService.scheduleEvent(event).then(
+          (scheduled) {
+            if (!scheduled) {
+              debugPrint('Could not schedule alarm for event ${event.id}.');
+            }
+          },
+        ));
       }
     }
   }
@@ -734,7 +760,13 @@ class CalendarProvider extends ChangeNotifier {
 
       for (final e in _events) {
         if (e.reminderMinutesBefore != null) {
-          unawaited(CalendarNotificationService.scheduleEvent(e));
+          unawaited(CalendarNotificationService.scheduleEvent(e).then(
+            (scheduled) {
+              if (!scheduled) {
+                debugPrint('Could not schedule alarm for event ${e.id}.');
+              }
+            },
+          ));
         }
       }
 

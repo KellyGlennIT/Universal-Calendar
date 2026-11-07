@@ -189,22 +189,22 @@ class EventDetailPage extends StatelessWidget {
                       ),
                     ]),
 
-                    // Reminder
+                    // Alarm
                     if (selectedEvent.reminderMinutesBefore != null) ...[
                       const SizedBox(height: 8),
                       Row(children: [
-                        const Icon(Icons.notifications_active_outlined,
+                        const Icon(Icons.alarm,
                             size: 18, color: Colors.grey),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '${tr(context, 'Reminder')}: '
+                            '${tr(context, 'Alarm')}: '
                             '${selectedEvent.reminderMinutesBefore == 0 ? tr(context, 'At event time') : '${selectedEvent.reminderMinutesBefore} min before'}',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),
                       ]),
-                      // Reminder sound label
+                      // Alarm sound label
                       const SizedBox(height: 4),
                       Padding(
                         padding: const EdgeInsets.only(left: 26),
