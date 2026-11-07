@@ -148,11 +148,22 @@ A dedicated suite of devotional utilities (`christian_tools_page.dart`):
 
 ## Screenshots
 
-> *Screenshots pending — placeholder section.*
+| Calendar — month view | Calendar — week view |
+|---|---|
+| <img src="Screenshots/Screenshot_2026-11-05-14-33-29-978_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar month view"> | <img src="Screenshots/Screenshot_2026-11-05-14-43-02-411_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar week view"> |
+| <img src="Screenshots/Screenshot_2026-11-06-09-13-21-087_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar week view"> | <img src="Screenshots/Screenshot_2026-11-06-09-13-24-277_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar week view"> |
 
-| Month view | Day timeline | Create calendar | PDF export |
-|---|---|---|---|
-| _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| Calendar guide | Create calendar |
+|---|---|
+| <img src="Screenshots/Screenshot_2026-11-06-09-13-35-931_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar guide"> | <img src="Screenshots/Screenshot_2026-11-06-09-13-29-766_com.kellyglenn.universalcalendar.jpg" width="260" alt="Create calendar"> |
+
+| Settings | Navigation drawer (French) |
+|---|---|
+| <img src="Screenshots/Screenshot_2026-11-06-09-49-58-952_com.kellyglenn.universalcalendar.jpg" width="260" alt="Settings screen"> | <img src="Screenshots/Screenshot_2026-11-06-09-50-10-454_com.kellyglenn.universalcalendar.jpg" width="260" alt="Navigation drawer in French"> |
+
+| Calendar — month view | PDF export |
+|---|---|
+| <img src="Screenshots/Screenshot_2026-11-06-09-13-14-908_com.kellyglenn.universalcalendar.jpg" width="260" alt="Calendar month view"> | <img src="Screenshots/Screenshot_2026-11-06-09-53-31-685_com.kellyglenn.universalcalendar.jpg" width="260" alt="PDF export preview"> |
 
 ---
 
