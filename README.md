@@ -408,4 +408,4 @@ The day view is tuned for mid-range phones:
 
 ## License
 
-License not yet assigned. Add a `LICENSE` file and reference it here before distributing.
+
